@@ -1,0 +1,86 @@
+'use client'
+import { formatDuration } from '@/lib/utils/time'
+
+export interface WakeWindowDraft {
+  duration_minutes: number
+  start_time: string   // "" means not set
+}
+
+interface Props {
+  value: WakeWindowDraft[]
+  onChange: (windows: WakeWindowDraft[]) => void
+}
+
+export function WakeWindowSettings({ value, onChange }: Props) {
+  function addWindow() {
+    onChange([...value, { duration_minutes: 60, start_time: '' }])
+  }
+
+  function removeWindow() {
+    if (value.length <= 1) return
+    onChange(value.slice(0, -1))
+  }
+
+  function updateDuration(index: number, minutes: number) {
+    onChange(value.map((w, i) => i === index ? { ...w, duration_minutes: minutes } : w))
+  }
+
+  function updateStartTime(index: number, time: string) {
+    onChange(value.map((w, i) => i === index ? { ...w, start_time: time } : w))
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-4">
+        <span className="font-semibold">깨시 횟수</span>
+        <button
+          type="button"
+          onClick={removeWindow}
+          disabled={value.length <= 1}
+          className="w-8 h-8 rounded-full bg-gray-200 text-lg font-bold disabled:opacity-40"
+        >
+          −
+        </button>
+        <span className="text-lg font-bold">{value.length}회</span>
+        <button
+          type="button"
+          onClick={addWindow}
+          className="w-8 h-8 rounded-full bg-amber-400 text-white text-lg font-bold"
+        >
+          +
+        </button>
+      </div>
+
+      {value.map((window, index) => (
+        <div key={index} className="bg-white rounded-xl p-4 flex flex-col gap-3">
+          <span className="font-semibold text-amber-600">깨시{index + 1}</span>
+
+          <div>
+            <label className="text-sm text-gray-500 mb-1 block">깨어있는 시간</label>
+            <select
+              value={window.duration_minutes}
+              onChange={e => updateDuration(index, Number(e.target.value))}
+              className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+            >
+              {[15, 30, 45, 60, 75, 90, 120, 150, 180, 210, 240].map(m => (
+                <option key={m} value={m}>{formatDuration(m)}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-500 mb-1 block">
+              대략적인 시작 시간 <span className="text-gray-400">(선택)</span>
+            </label>
+            <input
+              type="time"
+              value={window.start_time}
+              onChange={e => updateStartTime(index, e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
