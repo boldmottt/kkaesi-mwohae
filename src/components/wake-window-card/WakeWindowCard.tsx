@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Activity, WakeWindow } from '@/lib/supabase/types'
 import { ActivityList } from './ActivityList'
+import { ChatBox } from './ChatBox'
 import { formatDuration, formatTimeRange } from '@/lib/utils/time'
 
 interface Props {
@@ -70,6 +71,14 @@ export function WakeWindowCard({ windowIndex, wakeWindow, profileId, ageMonths, 
       ) : (
         <ActivityList activities={activities} loading={loading} />
       )}
+
+      <ChatBox
+        windowIndex={windowIndex}
+        ageMonths={ageMonths}
+        durationMinutes={wakeWindow.duration_minutes}
+        currentActivities={activities}
+        onActivitiesUpdate={setActivities}
+      />
     </div>
   )
 }
