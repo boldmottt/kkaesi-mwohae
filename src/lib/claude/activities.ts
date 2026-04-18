@@ -38,5 +38,9 @@ export async function generateActivities(req: ActivityRequest): Promise<Activity
   // Claude sometimes wraps JSON in markdown code blocks — strip them
   const cleaned = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
 
-  return JSON.parse(cleaned) as Activity[]
+  try {
+    return JSON.parse(cleaned) as Activity[]
+  } catch {
+    return []
+  }
 }

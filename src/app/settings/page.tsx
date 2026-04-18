@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useProfile } from '@/hooks/useProfile'
 import { useWakeWindows } from '@/hooks/useWakeWindows'
 import { WakeWindowSettings, WakeWindowDraft } from '@/components/settings/WakeWindowSettings'
+import { BabyTimeImport } from '@/components/settings/BabyTimeImport'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -104,6 +105,24 @@ export default function SettingsPage() {
         >
           {saving ? '저장 중...' : saveSuccess ? '저장됨 ✓' : '저장'}
         </button>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="font-semibold mb-3">BabyTime 가져오기</h2>
+        <p className="text-sm text-gray-500 mb-3">
+          BabyTime 내보내기 파일(CSV)로 깨시 설정을 자동으로 채울 수 있어요.
+        </p>
+        <BabyTimeImport onSuggestion={(count) => {
+          const defaults: Record<number, number[]> = {
+            1: [180],
+            2: [90, 180],
+            3: [30, 90, 180],
+            4: [30, 60, 90, 120],
+            5: [30, 45, 60, 90, 120],
+          }
+          const durations = defaults[count] ?? Array(count).fill(90)
+          setWindows(durations.map(d => ({ duration_minutes: d, start_time: '' })))
+        }} />
       </section>
 
       <section className="mb-8">

@@ -17,7 +17,7 @@ function getNextSixDays(): DateTab[] {
   for (let i = 1; i <= 6; i++) {
     const d = new Date()
     d.setDate(d.getDate() + i)
-    const dateStr = d.toISOString().split('T')[0]
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     const label = `${d.getMonth() + 1}/${d.getDate()} (${DAY_LABELS[d.getDay()]})`
     tabs.push({ date: dateStr, label })
   }

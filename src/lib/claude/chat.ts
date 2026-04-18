@@ -60,5 +60,9 @@ JSON만 출력하세요. 다른 텍스트는 절대 포함하지 마세요.`
   const text = response.content[0].type === 'text' ? response.content[0].text : '{}'
   const cleaned = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
 
-  return JSON.parse(cleaned) as ChatResponse
+  try {
+    return JSON.parse(cleaned) as ChatResponse
+  } catch {
+    return { type: 'answer', content: cleaned || '응답을 처리할 수 없었어요.' }
+  }
 }
