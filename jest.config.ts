@@ -7,7 +7,9 @@ const config: Config = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', { tsconfig: { jsx: 'react-jsx' } }],
+    '^.+\\.(t|j)sx?$': ['@swc/jest', {
+      jsc: { parser: { syntax: 'typescript', tsx: true } }
+    }],
   },
 }
 

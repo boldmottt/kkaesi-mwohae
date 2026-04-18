@@ -17,6 +17,8 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@swc/core": "^1.15.26",
+    "@swc/jest": "^0.2.39",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -27,7 +29,6 @@
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "tailwindcss": "^4",
-    "ts-jest": "^29.4.9",
     "typescript": "^5"
   }
 }
