@@ -22,7 +22,7 @@ export async function generateActivities(req: ActivityRequest): Promise<Activity
 
   const response = await getClient().chat.completions.create({
     model: 'gpt-5.4-nano',
-    max_tokens: 500,
+    max_completion_tokens: 500,
     messages: [
       {
         role: 'system',
