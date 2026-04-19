@@ -5,7 +5,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { useWakeWindows } from '@/hooks/useWakeWindows'
 import { WakeWindowCard } from '@/components/wake-window-card/WakeWindowCard'
 import { WeekTabs } from '@/components/week/WeekTabs'
-import { getAgeInMonths } from '@/lib/utils/age'
+import { getAgeInMonths, getAgeInDays } from '@/lib/utils/age'
 
 function getDefaultDate(): string {
   const d = new Date()
@@ -32,7 +32,9 @@ export default function WeekPage() {
     return null
   }
 
-  const ageMonths = getAgeInMonths(new Date(profile.birth_date))
+  const birthDate = new Date(profile.birth_date)
+  const ageMonths = getAgeInMonths(birthDate, new Date(selectedDate))
+  const ageDays = getAgeInDays(birthDate, new Date(selectedDate))
 
   return (
     <main className="min-h-screen p-6">
@@ -53,9 +55,11 @@ export default function WeekPage() {
           <WakeWindowCard
             key={`${selectedDate}-${index}`}
             windowIndex={index}
+            totalWindows={wakeWindows.length}
             wakeWindow={ww}
             profileId={profile.id}
             ageMonths={ageMonths}
+            ageDays={ageDays}
             date={selectedDate}
           />
         ))}

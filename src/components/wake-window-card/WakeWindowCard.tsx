@@ -7,13 +7,15 @@ import { formatDuration, formatTimeRange } from '@/lib/utils/time'
 
 interface Props {
   windowIndex: number
+  totalWindows: number
   wakeWindow: WakeWindow
   profileId: string
   ageMonths: number
+  ageDays: number
   date: string
 }
 
-export function WakeWindowCard({ windowIndex, wakeWindow, profileId, ageMonths, date }: Props) {
+export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileId, ageMonths, ageDays, date }: Props) {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -29,8 +31,11 @@ export function WakeWindowCard({ windowIndex, wakeWindow, profileId, ageMonths, 
           body: JSON.stringify({
             profileId,
             windowIndex,
+            totalWindows,
             durationMinutes: wakeWindow.duration_minutes,
+            startTime: wakeWindow.start_time,
             ageMonths,
+            ageDays,
             date,
           }),
         })
@@ -44,7 +49,7 @@ export function WakeWindowCard({ windowIndex, wakeWindow, profileId, ageMonths, 
       }
     }
     fetchActivities()
-  }, [profileId, windowIndex, wakeWindow.duration_minutes, ageMonths, date])
+  }, [profileId, windowIndex, totalWindows, wakeWindow.duration_minutes, wakeWindow.start_time, ageMonths, ageDays, date])
 
   const timeRange = wakeWindow.start_time
     ? formatTimeRange(wakeWindow.start_time, wakeWindow.duration_minutes)

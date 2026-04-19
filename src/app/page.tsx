@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useProfile } from '@/hooks/useProfile'
 import { useWakeWindows } from '@/hooks/useWakeWindows'
 import { WakeWindowCard } from '@/components/wake-window-card/WakeWindowCard'
-import { getAgeInMonths } from '@/lib/utils/age'
+import { getAgeInMonths, getAgeInDays } from '@/lib/utils/age'
 
 export default function TodayPage() {
   const router = useRouter()
@@ -43,7 +43,9 @@ export default function TodayPage() {
 
   if (!profile) return null
 
-  const ageMonths = getAgeInMonths(new Date(profile.birth_date))
+  const birthDate = new Date(profile.birth_date)
+  const ageMonths = getAgeInMonths(birthDate)
+  const ageDays = getAgeInDays(birthDate)
 
   return (
     <main className="min-h-screen p-6">
@@ -65,9 +67,11 @@ export default function TodayPage() {
           <WakeWindowCard
             key={ww.id}
             windowIndex={index}
+            totalWindows={wakeWindows.length}
             wakeWindow={ww}
             profileId={profile.id}
             ageMonths={ageMonths}
+            ageDays={ageDays}
             date={today}
           />
         ))}
