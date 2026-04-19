@@ -52,7 +52,7 @@ JSON만 출력하세요. 다른 텍스트는 절대 포함하지 마세요.`
   ]
 
   const response = await getClient().chat.completions.create({
-    model: 'gpt-4.1-nano',
+    model: 'gpt-5.4-nano',
     max_tokens: 600,
     response_format: { type: 'json_object' },
     messages,
