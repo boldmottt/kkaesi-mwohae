@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 type Mode = 'magic' | 'password'
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
+  const router = useRouter()
 
   async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault()
@@ -32,8 +34,10 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       setError('이메일 또는 비밀번호가 맞지 않아요.')
+      setLoading(false)
+    } else {
+      router.push('/')
     }
-    setLoading(false)
   }
 
   if (sent) {
