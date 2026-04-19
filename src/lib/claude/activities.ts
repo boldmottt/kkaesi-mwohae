@@ -21,7 +21,7 @@ export async function generateActivities(req: ActivityRequest): Promise<Activity
   const { ageMonths, windowIndex, durationMinutes, date } = req
 
   const response = await getClient().chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-4.1-nano',
     max_tokens: 500,
     response_format: { type: 'json_object' },
     messages: [
