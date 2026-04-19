@@ -62,7 +62,7 @@ export function WakeWindowSettings({ value, onChange }: Props) {
               onChange={e => updateDuration(index, Number(e.target.value))}
               className="border border-gray-300 rounded-lg px-3 py-2 w-full"
             >
-              {[15, 30, 45, 60, 75, 90, 120, 150, 180, 210, 240].map(m => (
+              {Array.from({ length: 24 }, (_, i) => (i + 1) * 10).map(m => (
                 <option key={m} value={m}>{formatDuration(m)}</option>
               ))}
             </select>
