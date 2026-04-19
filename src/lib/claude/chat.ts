@@ -1,11 +1,11 @@
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import { Activity, ChatMessage, ChatResponse } from '@/lib/supabase/types'
 
-let _client: Anthropic | null = null
+let _client: OpenAI | null = null
 
-function getClient(): Anthropic {
+function getClient(): OpenAI {
   if (!_client) {
-    _client = new Anthropic()
+    _client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   }
   return _client
 }
@@ -42,7 +42,8 @@ export async function chat(req: ChatRequest): Promise<ChatResponse> {
 
 JSON만 출력하세요. 다른 텍스트는 절대 포함하지 마세요.`
 
-  const messages: Anthropic.MessageParam[] = [
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: 'system', content: systemPrompt },
     ...history.map(m => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
@@ -50,19 +51,18 @@ JSON만 출력하세요. 다른 텍스트는 절대 포함하지 마세요.`
     { role: 'user', content: userMessage },
   ]
 
-  const response = await getClient().messages.create({
-    model: 'claude-sonnet-4-6',
+  const response = await getClient().chat.completions.create({
+    model: 'gpt-4o',
     max_tokens: 600,
-    system: systemPrompt,
+    response_format: { type: 'json_object' },
     messages,
   })
 
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}'
-  const cleaned = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+  const text = response.choices[0]?.message?.content ?? '{}'
 
   try {
-    return JSON.parse(cleaned) as ChatResponse
+    return JSON.parse(text) as ChatResponse
   } catch {
-    return { type: 'answer', content: cleaned || '응답을 처리할 수 없었어요.' }
+    return { type: 'answer', content: text || '응답을 처리할 수 없었어요.' }
   }
 }

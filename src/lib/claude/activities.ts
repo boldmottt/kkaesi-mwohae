@@ -1,7 +1,14 @@
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import { Activity } from '@/lib/supabase/types'
 
-const client = new Anthropic()
+let _client: OpenAI | null = null
+
+function getClient(): OpenAI {
+  if (!_client) {
+    _client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  }
+  return _client
+}
 
 interface ActivityRequest {
   ageMonths: number
@@ -13,14 +20,18 @@ interface ActivityRequest {
 export async function generateActivities(req: ActivityRequest): Promise<Activity[]> {
   const { ageMonths, windowIndex, durationMinutes, date } = req
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+  const response = await getClient().chat.completions.create({
+    model: 'gpt-4o',
     max_tokens: 500,
-    system: `당신은 0~12개월 영아 발달 전문가입니다.
-부모가 아기와 무엇을 하면 좋을지 실용적인 활동을 추천해 주세요.
-항상 아래 JSON 배열 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
-[{"name":"활동명","duration":"XX분","effect":"발달 효과 한 줄"}]`,
+    response_format: { type: 'json_object' },
     messages: [
+      {
+        role: 'system',
+        content: `당신은 0~12개월 영아 발달 전문가입니다.
+부모가 아기와 무엇을 하면 좋을지 실용적인 활동을 추천해 주세요.
+항상 아래 JSON 형식으로만 응답하세요.
+{"activities":[{"name":"활동명","duration":"XX분","effect":"발달 효과 한 줄"}]}`,
+      },
       {
         role: 'user',
         content: `아기 나이: ${ageMonths}개월
@@ -33,13 +44,11 @@ export async function generateActivities(req: ActivityRequest): Promise<Activity
     ],
   })
 
-  const text = message.content[0].type === 'text' ? message.content[0].text : '[]'
-
-  // Claude sometimes wraps JSON in markdown code blocks — strip them
-  const cleaned = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+  const text = response.choices[0]?.message?.content ?? '{}'
 
   try {
-    return JSON.parse(cleaned) as Activity[]
+    const parsed = JSON.parse(text)
+    return (parsed.activities ?? parsed) as Activity[]
   } catch {
     return []
   }
