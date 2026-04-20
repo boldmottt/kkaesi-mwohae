@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { useProfile } from '@/hooks/useProfile'
 import { useWakeWindows } from '@/hooks/useWakeWindows'
 import { WakeWindowCard } from '@/components/wake-window-card/WakeWindowCard'
@@ -19,6 +20,19 @@ export default function WeekPage() {
   const { profile, loading: profileLoading } = useProfile()
   const { wakeWindows, loading: windowsLoading } = useWakeWindows(profile?.id)
 
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) router.push('/login')
+    })
+  }, [router])
+
+  useEffect(() => {
+    if (!profileLoading && !profile) {
+      router.push('/onboarding')
+    }
+  }, [profile, profileLoading, router])
+
   if (profileLoading || windowsLoading) {
     return (
       <main className="min-h-screen p-6">
@@ -27,10 +41,7 @@ export default function WeekPage() {
     )
   }
 
-  if (!profile) {
-    router.push('/login')
-    return null
-  }
+  if (!profile) return null
 
   const birthDate = new Date(profile.birth_date)
   const ageMonths = getAgeInMonths(birthDate, new Date(selectedDate))

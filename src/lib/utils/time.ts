@@ -11,20 +11,18 @@ export function parseTimeString(timeStr: string): { hours: number; minutes: numb
   return { hours, minutes }
 }
 
+function formatPeriodTime(totalMinutes: number): string {
+  const hours24 = Math.floor(totalMinutes / 60) % 24
+  const mins = totalMinutes % 60
+  const period = hours24 < 12 ? '오전' : '오후'
+  const displayHour = hours24 % 12 || 12
+  const displayMin = String(mins).padStart(2, '0')
+  return `${period} ${displayHour}:${displayMin}`
+}
+
 export function formatTimeRange(startTime: string, durationMinutes: number): string {
   const { hours, minutes } = parseTimeString(startTime)
   const totalStartMins = hours * 60 + minutes
   const totalEndMins = totalStartMins + durationMinutes
-
-  const endHours = Math.floor(totalEndMins / 60) % 24
-  const endMins = totalEndMins % 60
-
-  const period = hours < 12 ? '오전' : '오후'
-  const displayStartHour = hours % 12 || 12
-  const displayStartMin = minutes === 0 ? '00' : String(minutes).padStart(2, '0')
-
-  const displayEndHour = endHours % 12 || 12
-  const displayEndMin = endMins === 0 ? '00' : String(endMins).padStart(2, '0')
-
-  return `${period} ${displayStartHour}:${displayStartMin}~${displayEndHour}:${displayEndMin}`
+  return `${formatPeriodTime(totalStartMins)}~${formatPeriodTime(totalEndMins)}`
 }

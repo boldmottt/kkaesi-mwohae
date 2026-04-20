@@ -1,11 +1,16 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useProfile } from '@/hooks/useProfile'
 import { useWakeWindows } from '@/hooks/useWakeWindows'
 import { WakeWindowCard } from '@/components/wake-window-card/WakeWindowCard'
 import { getAgeInMonths, getAgeInDays } from '@/lib/utils/age'
+
+function getTodayString(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 export default function TodayPage() {
   const router = useRouter()
@@ -25,8 +30,7 @@ export default function TodayPage() {
     }
   }, [profile, profileLoading, router])
 
-  const d = new Date()
-  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const today = useMemo(() => getTodayString(), [])
 
   if (profileLoading || windowsLoading) {
     return (

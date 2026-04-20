@@ -9,15 +9,22 @@ export function useProfile() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase
-      .from('profiles')
-      .select('*')
-      .limit(1)
-      .single()
-      .then(({ data }) => {
-        setProfile(data)
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
         setLoading(false)
-      })
+        return
+      }
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('owner_user_id', user.id)
+        .limit(1)
+        .single()
+        .then(({ data }) => {
+          setProfile(data)
+          setLoading(false)
+        })
+    })
   }, [])
 
   return { profile, loading }

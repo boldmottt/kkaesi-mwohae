@@ -20,11 +20,15 @@ describe('formatDuration', () => {
 
 describe('formatTimeRange', () => {
   it('시작 시간과 분을 더해 범위 문자열을 반환한다', () => {
-    expect(formatTimeRange('09:00', 90)).toBe('오전 9:00~10:30')
+    expect(formatTimeRange('09:00', 90)).toBe('오전 9:00~오전 10:30')
   })
 
   it('오후 시간을 올바르게 처리한다', () => {
-    expect(formatTimeRange('13:00', 60)).toBe('오후 1:00~2:00')
+    expect(formatTimeRange('13:00', 60)).toBe('오후 1:00~오후 2:00')
+  })
+
+  it('오전에서 오후로 넘어가는 경우를 올바르게 처리한다', () => {
+    expect(formatTimeRange('11:00', 180)).toBe('오전 11:00~오후 2:00')
   })
 })
 
