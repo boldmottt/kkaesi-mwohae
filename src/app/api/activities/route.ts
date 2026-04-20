@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
       ageMonths,
       ageDays,
       date,
+      routines,
     } = await req.json()
 
     if (
@@ -29,16 +30,20 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient()
 
-    // Cache lookup — includes duration so changing duration invalidates cache
     const { data: cached } = await supabase
       .from('activity_cache')
-      .select('activities, duration_minutes')
+      .select('activities, duration_minutes, routines')
       .eq('profile_id', profileId)
       .eq('cache_date', date)
       .eq('window_index', windowIndex)
       .single()
 
-    if (cached && cached.duration_minutes === durationMinutes) {
+    const routinesStr = routines ?? null
+    if (
+      cached &&
+      cached.duration_minutes === durationMinutes &&
+      (cached.routines ?? null) === routinesStr
+    ) {
       return NextResponse.json({ activities: cached.activities })
     }
 
@@ -49,6 +54,7 @@ export async function POST(req: NextRequest) {
       totalWindows,
       durationMinutes,
       startTime: startTime ?? null,
+      routines: routinesStr,
       date,
     })
 
@@ -57,6 +63,7 @@ export async function POST(req: NextRequest) {
       cache_date: date,
       window_index: windowIndex,
       duration_minutes: durationMinutes,
+      routines: routinesStr,
       activities,
     })
 

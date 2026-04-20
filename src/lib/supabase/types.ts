@@ -19,6 +19,7 @@ export interface WakeWindow {
   window_index: number
   duration_minutes: number
   start_time: string | null
+  routines: string | null
   updated_at: string
 }
 
@@ -48,4 +49,38 @@ export interface ChatResponse {
   type: 'answer' | 'update'
   content: string
   activities?: Activity[]
+}
+
+export interface ActivityLog {
+  id: string
+  profile_id: string
+  log_date: string
+  window_index: number
+  activity_name: string
+  activity_duration: string | null
+  activity_effect: string | null
+  did: boolean
+  rating: -1 | 0 | 1
+  note: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type RoutineKind = 'time_of_day' | 'window_position'
+export type RoutineAnchor = 'first' | 'last'
+export type RoutinePosition = 'start' | 'end'
+
+export interface Routine {
+  id: string
+  profile_id: string
+  label: string
+  description: string | null
+  duration_minutes: number
+  kind: RoutineKind
+  start_time: string | null
+  window_anchor: RoutineAnchor | null
+  position: RoutinePosition | null
+  enabled: boolean
+  created_at: string
+  updated_at: string
 }

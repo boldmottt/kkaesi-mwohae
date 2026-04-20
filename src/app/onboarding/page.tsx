@@ -9,9 +9,9 @@ export default function OnboardingPage() {
   const [babyName, setBabyName] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [windows, setWindows] = useState<WakeWindowDraft[]>([
-    { duration_minutes: 30, start_time: '' },
-    { duration_minutes: 90, start_time: '' },
-    { duration_minutes: 180, start_time: '' },
+    { duration_minutes: 30, start_time: '', routines: '' },
+    { duration_minutes: 90, start_time: '', routines: '' },
+    { duration_minutes: 180, start_time: '', routines: '' },
   ])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -47,6 +47,7 @@ export default function OnboardingPage() {
         window_index: i,
         duration_minutes: w.duration_minutes,
         start_time: w.start_time || null,
+        routines: w.routines || null,
       }))
     )
 

@@ -16,12 +16,12 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
-  // Sync windows state when wakeWindows loads
   useEffect(() => {
     if (wakeWindows.length > 0) {
       setWindows(wakeWindows.map(w => ({
         duration_minutes: w.duration_minutes,
         start_time: w.start_time ?? '',
+        routines: w.routines ?? '',
       })))
     }
   }, [wakeWindows])
@@ -33,7 +33,6 @@ export default function SettingsPage() {
 
     const supabase = createClient()
 
-    // Delete existing, re-insert updated windows
     await supabase.from('wake_windows').delete().eq('profile_id', profile.id)
     await supabase.from('wake_windows').insert(
       windows.map((w, i) => ({
@@ -41,6 +40,7 @@ export default function SettingsPage() {
         window_index: i,
         duration_minutes: w.duration_minutes,
         start_time: w.start_time || null,
+        routines: w.routines || null,
       }))
     )
 
@@ -60,9 +60,7 @@ export default function SettingsPage() {
     setInviteUrl(data.inviteUrl)
     try {
       await navigator.clipboard.writeText(data.inviteUrl)
-    } catch {
-      // clipboard API not available in some environments
-    }
+    } catch {}
   }
 
   async function handleLogout() {
@@ -121,7 +119,7 @@ export default function SettingsPage() {
             5: [30, 45, 60, 90, 120],
           }
           const durations = defaults[count] ?? Array(count).fill(90)
-          setWindows(durations.map(d => ({ duration_minutes: d, start_time: '' })))
+          setWindows(durations.map(d => ({ duration_minutes: d, start_time: '', routines: '' })))
         }} />
       </section>
 

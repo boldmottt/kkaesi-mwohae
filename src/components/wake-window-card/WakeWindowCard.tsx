@@ -34,6 +34,7 @@ export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileI
             totalWindows,
             durationMinutes: wakeWindow.duration_minutes,
             startTime: wakeWindow.start_time,
+            routines: wakeWindow.routines,
             ageMonths,
             ageDays,
             date,
@@ -49,7 +50,7 @@ export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileI
       }
     }
     fetchActivities()
-  }, [profileId, windowIndex, totalWindows, wakeWindow.duration_minutes, wakeWindow.start_time, ageMonths, ageDays, date])
+  }, [profileId, windowIndex, totalWindows, wakeWindow.duration_minutes, wakeWindow.start_time, wakeWindow.routines, ageMonths, ageDays, date])
 
   const timeRange = wakeWindow.start_time
     ? formatTimeRange(wakeWindow.start_time, wakeWindow.duration_minutes)
@@ -69,12 +70,24 @@ export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileI
         )}
       </div>
 
+      {wakeWindow.routines && (
+        <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-3">
+          📌 {wakeWindow.routines}
+        </p>
+      )}
+
       <p className="text-sm text-gray-500 mb-3">🎯 이렇게 놀아줘요</p>
 
       {error ? (
         <p className="text-sm text-red-400">{error}</p>
       ) : (
-        <ActivityList activities={activities} loading={loading} />
+        <ActivityList
+          activities={activities}
+          loading={loading}
+          profileId={profileId}
+          date={date}
+          windowIndex={windowIndex}
+        />
       )}
 
       <ChatBox

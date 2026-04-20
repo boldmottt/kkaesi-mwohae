@@ -13,10 +13,11 @@ function getClient(): OpenAI {
 interface ActivityRequest {
   ageDays: number
   ageMonths: number
-  windowIndex: number       // 0-based
+  windowIndex: number
   totalWindows: number
   durationMinutes: number
-  startTime: string | null  // "HH:MM" or null
+  startTime: string | null
+  routines: string | null
   date: string
 }
 
@@ -37,11 +38,15 @@ function getWindowPositionHint(index: number, total: number): string {
 }
 
 export async function generateActivities(req: ActivityRequest): Promise<Activity[]> {
-  const { ageDays, ageMonths, windowIndex, totalWindows, durationMinutes, startTime, date } = req
+  const { ageDays, ageMonths, windowIndex, totalWindows, durationMinutes, startTime, routines, date } = req
 
   const feedingTime = 15
   const playTime = Math.max(10, durationMinutes - feedingTime)
   const suggestedCount = Math.max(2, Math.min(6, Math.round(playTime / 20)))
+
+  const routineBlock = routines
+    ? `\n\n**⚠️ 사용자 고정 루틴 (반드시 반영):**\n${routines}\n\n위 고정 루틴은 사용자가 매일 반복하는 활동입니다. 반드시 다음 규칙을 지키세요:\n1. 고정 루틴에 해당하는 활동을 JSON 배열 안에 그대로 포함시키세요 (name/duration/effect 형식으로).\n2. 고정 루틴의 시간(분)을 놀이 시간에서 빼고, 남은 시간만 자유 활동으로 채우세요.\n3. 고정 루틴은 사용자가 지정한 위치(처음/중간/끝 등)에 맞게 배치하세요. 위치 지정이 없으면 문맥상 자연스러운 곳에 넣으세요.\n4. 고정 루틴의 name은 사용자가 쓴 표현을 그대로 살려주세요.`
+    : ''
 
   const systemPrompt = `당신은 0~12개월 영아 발달 전문가이자 육아 코치입니다.
 부모가 아기의 '깨어있는 시간(깨시)'을 알차게 채울 수 있도록 실용적이고 구체적인 활동을 추천합니다.
@@ -51,7 +56,7 @@ export async function generateActivities(req: ActivityRequest): Promise<Activity
 2. 활동 수는 ${suggestedCount}개 내외로, 각 활동의 duration을 합산했을 때 ${playTime}분에 ±10분 이내로 맞추세요.
 3. 아기의 정확한 월령/일령에 맞는 발달 단계에 맞춰주세요 (너무 어려우면 안 되고, 너무 쉬워도 안 됨).
 4. 깨시의 시간대와 순서를 고려해서 자극 강도를 조절하세요 (아침은 활발, 저녁은 차분).
-5. 같은 유형 반복 금지 — 다양한 발달 영역(신체/감각/언어/정서/인지) 고루 섞기.
+5. 같은 유형 반복 금지 — 다양한 발달 영역(신체/감각/언어/정서/인지) 고루 섞기.${routineBlock}
 
 **응답 형식 (반드시 이 형식만):**
 설명 없이 JSON 배열만 출력. 각 원소는 {"name","duration","effect"}.
@@ -67,9 +72,9 @@ duration은 "숫자 + 분" 형식 ("15분", "5분").
 - 전체 깨어있는 시간: ${durationMinutes}분
 - 수유 예상: ${feedingTime}분 (깨시 초반에 소요됨, 활동에 포함하지 말 것)
 - 실제 놀이에 쓸 수 있는 시간: ${playTime}분
-- 날짜 시드: ${date}
+- 날짜 시드: ${date}${routines ? `\n- 고정 루틴: ${routines}` : ''}
 
-위 정보에 맞춰 놀이 시간 ${playTime}분을 촘촘하게 채울 활동 ${suggestedCount}개를 추천해 주세요. 각 활동의 duration 합이 ${playTime}분에 근접해야 합니다.`
+위 정보에 맞춰 놀이 시간 ${playTime}분을 촘촘하게 채울 활동을 추천해 주세요.${routines ? ' 고정 루틴을 반드시 포함하고, 남은 시간을 자유 활동으로 채우세요.' : ` 활동 ${suggestedCount}개를 추천해 주세요.`} 각 활동의 duration 합이 ${playTime}분에 근접해야 합니다.`
 
   const response = await getClient().chat.completions.create({
     model: 'gpt-5.4-nano',

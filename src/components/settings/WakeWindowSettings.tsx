@@ -3,7 +3,8 @@ import { formatDuration } from '@/lib/utils/time'
 
 export interface WakeWindowDraft {
   duration_minutes: number
-  start_time: string   // "" means not set
+  start_time: string
+  routines: string
 }
 
 interface Props {
@@ -13,7 +14,7 @@ interface Props {
 
 export function WakeWindowSettings({ value, onChange }: Props) {
   function addWindow() {
-    onChange([...value, { duration_minutes: 60, start_time: '' }])
+    onChange([...value, { duration_minutes: 60, start_time: '', routines: '' }])
   }
 
   function removeWindow() {
@@ -27,6 +28,10 @@ export function WakeWindowSettings({ value, onChange }: Props) {
 
   function updateStartTime(index: number, time: string) {
     onChange(value.map((w, i) => i === index ? { ...w, start_time: time } : w))
+  }
+
+  function updateRoutines(index: number, routines: string) {
+    onChange(value.map((w, i) => i === index ? { ...w, routines } : w))
   }
 
   return (
@@ -77,6 +82,19 @@ export function WakeWindowSettings({ value, onChange }: Props) {
               value={window.start_time}
               onChange={e => updateStartTime(index, e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-500 mb-1 block">
+              고정 루틴 <span className="text-gray-400">(선택)</span>
+            </label>
+            <textarea
+              value={window.routines}
+              onChange={e => updateRoutines(index, e.target.value)}
+              placeholder="예: 마지막 1시간은 목욕→마사지→수유→자장가 수면 루틴 / 오후 1시에 산책 30분"
+              rows={2}
+              className="border border-gray-300 rounded-lg px-3 py-2 w-full text-sm resize-none"
             />
           </div>
         </div>
