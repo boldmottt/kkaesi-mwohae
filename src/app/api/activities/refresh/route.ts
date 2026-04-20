@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateActivities } from '@/lib/claude/activities'
 
+function normalizeRoutines(val: unknown): string | null {
+  if (typeof val === 'string' && val.trim().length > 0) return val.trim()
+  return null
+}
+
 export async function POST(req: NextRequest) {
   try {
     const {
@@ -29,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = await createClient()
-    const routinesStr = routines ?? null
+    const routinesNorm = normalizeRoutines(routines)
 
     await supabase
       .from('activity_cache')
@@ -45,7 +50,7 @@ export async function POST(req: NextRequest) {
       totalWindows,
       durationMinutes,
       startTime: startTime ?? null,
-      routines: routinesStr,
+      routines: routinesNorm,
       date,
     })
 
@@ -56,7 +61,7 @@ export async function POST(req: NextRequest) {
         cache_date: date,
         window_index: windowIndex,
         duration_minutes: durationMinutes,
-        routines: routinesStr,
+        routines: routinesNorm,
         activities,
       })
 

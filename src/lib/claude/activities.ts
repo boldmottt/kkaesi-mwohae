@@ -38,15 +38,58 @@ function getWindowPositionHint(index: number, total: number): string {
   return '중간 깨시 — 집중력 좋은 시간대, 발달 활동 적극적으로'
 }
 
+/**
+ * 루틴 텍스트에서 시간(분) 정보를 추출한다.
+ * 예: "마지막 1시간은 수면 루틴" → 60분
+ * 예: "산책 30분" → 30분
+ * 추출 실패 시 null 반환
+ */
+function parseRoutineDuration(routineText: string): number | null {
+  const hourMinMatch = routineText.match(/(\d+)\s*시간\s*(\d+)\s*분/)
+  if (hourMinMatch) {
+    return parseInt(hourMinMatch[1], 10) * 60 + parseInt(hourMinMatch[2], 10)
+  }
+  const hourMatch = routineText.match(/(\d+)\s*시간/)
+  if (hourMatch) return parseInt(hourMatch[1], 10) * 60
+  const minMatch = routineText.match(/(\d+)\s*분/)
+  if (minMatch) return parseInt(minMatch[1], 10)
+  return null
+}
+
+/**
+ * 루틴 텍스트에서 위치 정보를 추출한다.
+ * "마지막", "끝", "후반" → 'end'
+ * "처음", "시작", "초반" → 'start'
+ * 그 외 → 'middle'
+ */
+function parseRoutinePosition(routineText: string): 'start' | 'middle' | 'end' {
+  if (/마지막|끝|후반|잠자기\s*전|잠들기\s*전|수면\s*전/.test(routineText)) return 'end'
+  if (/처음|시작|초반|일어나|깨자마자/.test(routineText)) return 'start'
+  return 'middle'
+}
+
 export async function generateActivities(req: ActivityRequest): Promise<Activity[]> {
   const { ageDays, ageMonths, windowIndex, totalWindows, durationMinutes, startTime, routines, date } = req
 
   const stage = getDevStage(ageMonths)
   const evidenceContext = buildEvidenceContext(ageMonths, ageDays)
 
-  const routineBlock = routines
-    ? `\n\n**사용자 고정 루틴 (반드시 반영):**\n${routines}\n고정 루틴은 JSON 배열에 포함시키되, 나머지 시간을 자유 활동으로 채우세요. 고정 루틴의 name은 사용자가 쓴 표현을 그대로 살려주세요.`
-    : ''
+  let routineActivity: Activity | null = null
+  let routineDurationMinutes = 0
+  let routinePosition: 'start' | 'middle' | 'end' = 'end'
+
+  if (routines) {
+    const parsedDuration = parseRoutineDuration(routines)
+    routineDurationMinutes = parsedDuration ?? 30
+    routinePosition = parseRoutinePosition(routines)
+    routineActivity = {
+      name: `📌 ${routines}`,
+      duration: `${routineDurationMinutes}분`,
+      effect: '사용자 지정 고정 루틴',
+    }
+  }
+
+  const availableMinutes = Math.max(10, durationMinutes - routineDurationMinutes)
 
   const systemPrompt = `당신은 영아 발달 전문가이며, 반드시 아래 제공되는 근거 자료에 기반하여 활동을 추천합니다.
 
@@ -62,36 +105,43 @@ ${evidenceContext}
    - ${stage.attentionSpan}
    - 한 활동이 이 범위를 크게 넘지 않도록 하세요.
 
-3. **발달 단계 적합성**: 위 CDC 이정표와 적합한 활동 예시를 참고하여, 아기가 현재 할 수 있거나 조금 도전적인 수준의 활동만 추천하세요.
+3. **발달 단계 적합성**: 위 CDC 이정표와 적합한 활동 예시를 참고하세요.
 
-4. **과자극 방지**: 활동 목록 마지막에 "자유 탐색 / 쉬는 시간" 항목을 포함하여 부모가 아기의 신호에 따라 쉴 수 있도록 하세요.
+4. **과자극 방지**: 마지막 항목으로 "자유 탐색 / 쉬는 시간"을 포함하세요.
 
 5. **시간대 고려**: 아침은 활발한 신체 활동, 저녁은 차분한 감각/정서 활동 위주.
 
-6. **다양성**: 신체/감각/언어/정서/인지 영역을 고루 섞되, 같은 유형 반복 금지.${routineBlock}
+6. **다양성**: 신체/감각/언어/정서/인지 영역을 고루 섞기.${routines ? `
+
+**⚠️ 중요: 사용자가 이 깨시에 고정 루틴을 설정했습니다.**
+루틴 내용: "${routines}"
+루틴 소요 시간: ${routineDurationMinutes}분
+루틴 위치: ${routinePosition === 'end' ? '깨시 끝부분' : routinePosition === 'start' ? '깨시 시작부분' : '깨시 중간'}
+
+→ 루틴은 별도로 처리됩니다. 당신은 루틴을 제외한 나머지 ${availableMinutes}분에 대해서만 활동을 추천하세요.
+→ 루틴 관련 활동(예: 수면 루틴, 목욕, 마사지 등)은 절대 추천하지 마세요. 중복됩니다.
+→ ${routinePosition === 'end' ? '깨시 끝부분은 루틴이 차지하므로, 후반부로 갈수록 차분한 활동을 추천하여 루틴으로 자연스럽게 이어지도록 하세요.' : routinePosition === 'start' ? '깨시 시작부분은 루틴이 차지하므로, 루틴 이후에 이어질 활동을 추천하세요.' : ''}` : ''}
 
 **응답 형식 (반드시 이 형식만):**
 JSON 배열만 출력. 각 원소는 {"name","duration","effect"}.
 - duration은 "숫자 + 분" 형식 ("5분", "10분")
 - effect에는 발달 효과와 함께 근거(WHO/CDC/AAP 등)를 간단히 표기
-- 마지막 항목으로 "자유 탐색 / 쉬는 시간"을 넣어 나머지 시간을 아기 주도로 보낼 수 있게 하세요
+- 마지막 항목으로 "자유 탐색 / 쉬는 시간"을 포함
 
 예시:
-[{"name":"터미타임","duration":"5분","effect":"상체 근력 발달 (WHO: 하루 30분+ 권장)"},{"name":"자유 탐색 / 쉬는 시간","duration":"10분","effect":"아기 주도 탐색. 과자극 신호(고개 돌림, 하품) 보이면 안아주세요."}]`
+[{"name":"터미타임","duration":"5분","effect":"상체 근력 발달 (WHO: 하루 30분+ 권장)"},{"name":"자유 탐색 / 쉬는 시간","duration":"10분","effect":"아기 주도 탐색. 과자극 신호 보이면 안아주세요."}]`
 
-  const userPrompt = `**오늘의 깨시 정보:**
+  const userPrompt = `**이 깨시에서 활동을 추천할 가용 시간: ${availableMinutes}분**
+(전체 깨시 ${durationMinutes}분${routines ? ` - 고정 루틴 ${routineDurationMinutes}분` : ''})
+
 - 아기 나이: ${ageDays}일 (약 ${ageMonths}개월)
-- 전체 깨시 ${totalWindows}회 중 ${windowIndex + 1}번째 깨시
+- 전체 깨시 ${totalWindows}회 중 ${windowIndex + 1}번째
 - 깨시 위치: ${getWindowPositionHint(windowIndex, totalWindows)}
 - 시작 시간: ${startTime ?? '미입력'}
 - 시간대: ${getTimeOfDayHint(startTime)}
-- 전체 깨어있는 시간: ${durationMinutes}분
-- 날짜: ${date}${routines ? `\n- 고정 루틴: ${routines}` : ''}
+- 날짜: ${date}
 
-위 근거 자료와 가이드라인에 기반하여 이 깨시에 적합한 활동을 추천해 주세요.
-- 깨시 전체를 꽉 채우지 말고, 수유·자유탐색·안정 시간을 고려한 적정량만 추천하세요.
-- 각 활동의 duration은 이 월령의 주의집중 시간(${stage.attentionSpan})에 맞추세요.
-- 마지막에 "자유 탐색 / 쉬는 시간"을 포함하세요.`
+${availableMinutes}분 내에서 적정량의 활동을 추천해 주세요. 깨시를 꽉 채우지 않아도 됩니다.`
 
   const response = await getClient().chat.completions.create({
     model: 'gpt-5.4-nano',
@@ -105,10 +155,34 @@ JSON 배열만 출력. 각 원소는 {"name","duration","effect"}.
   const text = response.choices[0]?.message?.content ?? '[]'
   const cleaned = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
 
+  let aiActivities: Activity[] = []
   try {
     const parsed = JSON.parse(cleaned)
-    return (Array.isArray(parsed) ? parsed : parsed.activities ?? []) as Activity[]
+    aiActivities = (Array.isArray(parsed) ? parsed : parsed.activities ?? []) as Activity[]
   } catch {
-    return []
+    aiActivities = []
   }
+
+  if (routineActivity) {
+    if (routinePosition === 'start') {
+      return [routineActivity, ...aiActivities]
+    } else if (routinePosition === 'end') {
+      const freeExploreIdx = aiActivities.findIndex(a =>
+        a.name.includes('자유') || a.name.includes('쉬는')
+      )
+      if (freeExploreIdx >= 0) {
+        return [
+          ...aiActivities.slice(0, freeExploreIdx),
+          routineActivity,
+          ...aiActivities.slice(freeExploreIdx),
+        ]
+      }
+      return [...aiActivities, routineActivity]
+    } else {
+      const mid = Math.floor(aiActivities.length / 2)
+      return [...aiActivities.slice(0, mid), routineActivity, ...aiActivities.slice(mid)]
+    }
+  }
+
+  return aiActivities
 }
