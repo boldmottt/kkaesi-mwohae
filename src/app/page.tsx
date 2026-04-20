@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { useProfile } from '@/hooks/useProfile'
 import { useWakeWindows } from '@/hooks/useWakeWindows'
 import { WakeWindowCard } from '@/components/wake-window-card/WakeWindowCard'
@@ -20,26 +19,25 @@ function formatTodayLabel(): string {
 
 export default function TodayPage() {
   const router = useRouter()
-  const { profile, loading: profileLoading } = useProfile()
+  const { profile, loading: profileLoading, isLoggedIn } = useProfile()
   const { wakeWindows, loading: windowsLoading } = useWakeWindows(profile?.id)
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) router.push('/login')
-    })
-  }, [router])
+    if (isLoggedIn === false) {
+      router.push('/login')
+    }
+  }, [isLoggedIn, router])
 
   useEffect(() => {
-    if (!profileLoading && !profile) {
+    if (isLoggedIn === true && !profileLoading && !profile) {
       router.push('/onboarding')
     }
-  }, [profile, profileLoading, router])
+  }, [isLoggedIn, profile, profileLoading, router])
 
   const today = useMemo(() => getTodayString(), [])
   const todayLabel = useMemo(() => formatTodayLabel(), [])
 
-  if (profileLoading || windowsLoading) {
+  if (isLoggedIn === null || profileLoading || windowsLoading) {
     return (
       <main className="min-h-screen p-6">
         <div className="h-8 bg-amber-200 rounded animate-pulse mb-8 w-32" />

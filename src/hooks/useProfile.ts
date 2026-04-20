@@ -6,14 +6,17 @@ import { Profile } from '@/lib/supabase/types'
 export function useProfile() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
+        setIsLoggedIn(false)
         setLoading(false)
         return
       }
+      setIsLoggedIn(true)
       supabase
         .from('profiles')
         .select('*')
@@ -27,5 +30,5 @@ export function useProfile() {
     })
   }, [])
 
-  return { profile, loading }
+  return { profile, loading, isLoggedIn }
 }

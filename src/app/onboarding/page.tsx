@@ -1,11 +1,12 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { WakeWindowSettings, WakeWindowDraft } from '@/components/settings/WakeWindowSettings'
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const [authChecked, setAuthChecked] = useState(false)
   const [babyName, setBabyName] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [windows, setWindows] = useState<WakeWindowDraft[]>([
@@ -15,6 +16,17 @@ export default function OnboardingPage() {
   ])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        router.push('/login')
+      } else {
+        setAuthChecked(true)
+      }
+    })
+  }, [router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -58,6 +70,14 @@ export default function OnboardingPage() {
     }
 
     router.push('/')
+  }
+
+  if (!authChecked) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-6">
+        <p className="text-gray-400 text-sm">확인 중...</p>
+      </main>
+    )
   }
 
   return (
