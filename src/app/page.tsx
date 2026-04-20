@@ -12,6 +12,12 @@ function getTodayString(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+function formatTodayLabel(): string {
+  const DAY_LABELS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일']
+  const d = new Date()
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${DAY_LABELS[d.getDay()]}`
+}
+
 export default function TodayPage() {
   const router = useRouter()
   const { profile, loading: profileLoading } = useProfile()
@@ -31,6 +37,7 @@ export default function TodayPage() {
   }, [profile, profileLoading, router])
 
   const today = useMemo(() => getTodayString(), [])
+  const todayLabel = useMemo(() => formatTodayLabel(), [])
 
   if (profileLoading || windowsLoading) {
     return (
@@ -53,14 +60,15 @@ export default function TodayPage() {
 
   return (
     <main className="min-h-screen p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold">깨시뭐해</h1>
-          <p className="text-sm text-gray-500">{profile.baby_name} · {ageMonths}개월</p>
+          <p className="text-sm text-gray-500 mt-0.5">{profile.baby_name} · {ageMonths}개월</p>
+          <p className="text-sm text-gray-400 mt-0.5">{todayLabel} · D+{ageDays}</p>
         </div>
         <button
           onClick={() => router.push('/settings')}
-          className="text-gray-400 text-sm"
+          className="text-gray-400 text-sm mt-1"
         >
           설정
         </button>
