@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Activity, WakeWindow } from '@/lib/supabase/types'
 import { ActivityList } from './ActivityList'
 import { ChatBox } from './ChatBox'
@@ -18,7 +18,20 @@ interface Props {
 export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileId, ageMonths, ageDays, date }: Props) {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const requestBody = {
+    profileId,
+    windowIndex,
+    totalWindows,
+    durationMinutes: wakeWindow.duration_minutes,
+    startTime: wakeWindow.start_time,
+    routines: wakeWindow.routines,
+    ageMonths,
+    ageDays,
+    date,
+  }
 
   useEffect(() => {
     async function fetchActivities() {
@@ -28,17 +41,7 @@ export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileI
         const res = await fetch('/api/activities', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            profileId,
-            windowIndex,
-            totalWindows,
-            durationMinutes: wakeWindow.duration_minutes,
-            startTime: wakeWindow.start_time,
-            routines: wakeWindow.routines,
-            ageMonths,
-            ageDays,
-            date,
-          }),
+          body: JSON.stringify(requestBody),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Failed')
@@ -50,7 +53,40 @@ export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileI
       }
     }
     fetchActivities()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId, windowIndex, totalWindows, wakeWindow.duration_minutes, wakeWindow.start_time, wakeWindow.routines, ageMonths, ageDays, date])
+
+  async function handleRefresh() {
+    setRefreshing(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/activities/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
+      setActivities(data.activities)
+    } catch {
+      setError('다시 추천받기에 실패했어요.')
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  const handleActivitiesUpdate = useCallback(async (newActivities: Activity[]) => {
+    setActivities(newActivities)
+    try {
+      await fetch('/api/activities/cache', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId, date, windowIndex, activities: newActivities }),
+      })
+    } catch {
+      console.error('Failed to persist activity update to cache')
+    }
+  }, [profileId, date, windowIndex])
 
   const timeRange = wakeWindow.start_time
     ? formatTimeRange(wakeWindow.start_time, wakeWindow.duration_minutes)
@@ -65,9 +101,19 @@ export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileI
             {formatDuration(wakeWindow.duration_minutes)}
           </span>
         </div>
-        {timeRange && (
-          <span className="text-xs text-gray-400">{timeRange}</span>
-        )}
+        <div className="flex items-center gap-2">
+          {timeRange && (
+            <span className="text-xs text-gray-400">{timeRange}</span>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+            className="text-xs text-gray-400 hover:text-amber-500 disabled:opacity-40 transition-colors"
+            title="다시 추천받기"
+          >
+            {refreshing ? '추천 중...' : '↻ 다시 추천'}
+          </button>
+        </div>
       </div>
 
       {wakeWindow.routines && (
@@ -95,7 +141,7 @@ export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileI
         ageMonths={ageMonths}
         durationMinutes={wakeWindow.duration_minutes}
         currentActivities={activities}
-        onActivitiesUpdate={setActivities}
+        onActivitiesUpdate={handleActivitiesUpdate}
       />
     </div>
   )

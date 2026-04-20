@@ -31,22 +31,12 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient()
     const routinesStr = routines ?? null
 
-    const { data: cached } = await supabase
+    await supabase
       .from('activity_cache')
-      .select('activities, duration_minutes, routines')
+      .delete()
       .eq('profile_id', profileId)
       .eq('cache_date', date)
       .eq('window_index', windowIndex)
-      .maybeSingle()
-
-    if (
-      cached &&
-      cached.activities &&
-      cached.duration_minutes === durationMinutes &&
-      (cached.routines ?? null) === routinesStr
-    ) {
-      return NextResponse.json({ activities: cached.activities })
-    }
 
     const activities = await generateActivities({
       ageDays,
@@ -59,28 +49,25 @@ export async function POST(req: NextRequest) {
       date,
     })
 
-    const { error: upsertError } = await supabase
+    const { error: insertError } = await supabase
       .from('activity_cache')
-      .upsert(
-        {
-          profile_id: profileId,
-          cache_date: date,
-          window_index: windowIndex,
-          duration_minutes: durationMinutes,
-          routines: routinesStr,
-          activities,
-        },
-        { onConflict: 'profile_id,cache_date,window_index' }
-      )
+      .insert({
+        profile_id: profileId,
+        cache_date: date,
+        window_index: windowIndex,
+        duration_minutes: durationMinutes,
+        routines: routinesStr,
+        activities,
+      })
 
-    if (upsertError) {
-      console.error('Cache upsert error:', upsertError)
+    if (insertError) {
+      console.error('Cache insert error after refresh:', insertError)
     }
 
     return NextResponse.json({ activities })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    console.error('Activities API error:', message)
+    console.error('Activities refresh error:', message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
