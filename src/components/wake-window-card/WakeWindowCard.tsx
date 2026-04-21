@@ -13,9 +13,21 @@ interface Props {
   ageMonths: number
   ageDays: number
   date: string
+  overrideActivities?: Activity[]
+  onActivitiesLoaded?: (windowIndex: number, activities: Activity[]) => void
 }
 
-export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileId, ageMonths, ageDays, date }: Props) {
+export function WakeWindowCard({
+  windowIndex,
+  totalWindows,
+  wakeWindow,
+  profileId,
+  ageMonths,
+  ageDays,
+  date,
+  overrideActivities,
+  onActivitiesLoaded,
+}: Props) {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -34,7 +46,16 @@ export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileI
   }
 
   useEffect(() => {
+    if (overrideActivities && overrideActivities.length > 0) {
+      setActivities(overrideActivities)
+      setLoading(false)
+    }
+  }, [overrideActivities])
+
+  useEffect(() => {
     async function fetchActivities() {
+      if (overrideActivities && overrideActivities.length > 0) return
+
       setLoading(true)
       setError(null)
       try {
@@ -46,6 +67,7 @@ export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileI
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Failed')
         setActivities(data.activities)
+        onActivitiesLoaded?.(windowIndex, data.activities)
       } catch {
         setError('활동 추천을 불러오지 못했어요.')
       } finally {
@@ -68,6 +90,7 @@ export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileI
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed')
       setActivities(data.activities)
+      onActivitiesLoaded?.(windowIndex, data.activities)
     } catch {
       setError('다시 추천받기에 실패했어요.')
     } finally {
@@ -77,6 +100,7 @@ export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileI
 
   const handleActivitiesUpdate = useCallback(async (newActivities: Activity[]) => {
     setActivities(newActivities)
+    onActivitiesLoaded?.(windowIndex, newActivities)
     try {
       await fetch('/api/activities/cache', {
         method: 'PUT',
@@ -86,7 +110,7 @@ export function WakeWindowCard({ windowIndex, totalWindows, wakeWindow, profileI
     } catch {
       console.error('Failed to persist activity update to cache')
     }
-  }, [profileId, date, windowIndex])
+  }, [profileId, date, windowIndex, onActivitiesLoaded])
 
   const timeRange = wakeWindow.start_time
     ? formatTimeRange(wakeWindow.start_time, wakeWindow.duration_minutes)
