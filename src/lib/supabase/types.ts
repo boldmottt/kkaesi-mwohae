@@ -29,6 +29,8 @@ export interface ActivityCache {
   cache_date: string
   window_index: number
   activities: Activity[]
+  duration_minutes: number | null
+  routines: string | null
   created_at: string
 }
 
@@ -83,4 +85,25 @@ export interface Routine {
   enabled: boolean
   created_at: string
   updated_at: string
+}
+
+export interface DailyChatSession {
+  id: string
+  profile_id: string
+  chat_date: string
+  messages: ChatMessage[]
+  context_summary: string | null
+  schedule_applied: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface DailyRoutineStatus {
+  id: string
+  profile_id: string
+  status_date: string
+  window_index: number
+  routine_text: string
+  skipped: boolean
+  created_at: string
 }
