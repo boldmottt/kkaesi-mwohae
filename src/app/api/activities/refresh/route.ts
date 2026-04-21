@@ -36,6 +36,17 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient()
     const routinesNorm = normalizeRoutines(routines)
 
+    // 루틴 스킵 상태 확인
+    const { data: routineStatus } = await supabase
+      .from('daily_routine_status')
+      .select('skipped')
+      .eq('profile_id', profileId)
+      .eq('status_date', date)
+      .eq('window_index', windowIndex)
+      .maybeSingle()
+
+    const effectiveRoutines = routineStatus?.skipped ? null : routinesNorm
+
     await supabase
       .from('activity_cache')
       .delete()
@@ -50,7 +61,7 @@ export async function POST(req: NextRequest) {
       totalWindows,
       durationMinutes,
       startTime: startTime ?? null,
-      routines: routinesNorm,
+      routines: effectiveRoutines,
       date,
     })
 
@@ -61,7 +72,7 @@ export async function POST(req: NextRequest) {
         cache_date: date,
         window_index: windowIndex,
         duration_minutes: durationMinutes,
-        routines: routinesNorm,
+        routines: effectiveRoutines,
         activities,
       })
 
