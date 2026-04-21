@@ -1,10 +1,12 @@
 'use client'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProfile } from '@/hooks/useProfile'
 import { useWakeWindows } from '@/hooks/useWakeWindows'
 import { WakeWindowCard } from '@/components/wake-window-card/WakeWindowCard'
+import { DailyChat } from '@/components/daily-chat/DailyChat'
 import { getAgeInMonths, getAgeInDays } from '@/lib/utils/age'
+import { Activity } from '@/lib/supabase/types'
 
 function getTodayString(): string {
   const d = new Date()
@@ -21,6 +23,7 @@ export default function TodayPage() {
   const router = useRouter()
   const { profile, loading: profileLoading, isLoggedIn } = useProfile()
   const { wakeWindows, loading: windowsLoading } = useWakeWindows(profile?.id)
+  const [activitiesByWindow, setActivitiesByWindow] = useState<Record<number, Activity[]>>({})
 
   useEffect(() => {
     if (isLoggedIn === false) {
@@ -36,6 +39,20 @@ export default function TodayPage() {
 
   const today = useMemo(() => getTodayString(), [])
   const todayLabel = useMemo(() => formatTodayLabel(), [])
+
+  const handleScheduleUpdate = useCallback((windowIndex: number, activities: Activity[]) => {
+    setActivitiesByWindow(prev => ({
+      ...prev,
+      [windowIndex]: activities,
+    }))
+  }, [])
+
+  const handleActivitiesLoaded = useCallback((windowIndex: number, activities: Activity[]) => {
+    setActivitiesByWindow(prev => {
+      if (JSON.stringify(prev[windowIndex]) === JSON.stringify(activities)) return prev
+      return { ...prev, [windowIndex]: activities }
+    })
+  }, [])
 
   if (isLoggedIn === null || profileLoading || windowsLoading) {
     return (
@@ -72,6 +89,16 @@ export default function TodayPage() {
         </button>
       </div>
 
+      <DailyChat
+        profileId={profile.id}
+        ageMonths={ageMonths}
+        ageDays={ageDays}
+        date={today}
+        wakeWindows={wakeWindows}
+        currentActivitiesByWindow={activitiesByWindow}
+        onScheduleUpdate={handleScheduleUpdate}
+      />
+
       <div className="flex flex-col gap-4">
         {wakeWindows.map((ww, index) => (
           <WakeWindowCard
@@ -83,6 +110,8 @@ export default function TodayPage() {
             ageMonths={ageMonths}
             ageDays={ageDays}
             date={today}
+            overrideActivities={activitiesByWindow[index]}
+            onActivitiesLoaded={handleActivitiesLoaded}
           />
         ))}
       </div>
