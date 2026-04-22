@@ -11,7 +11,7 @@ export function parseTimeString(timeStr: string): { hours: number; minutes: numb
   return { hours, minutes }
 }
 
-function formatPeriodTime(totalMinutes: number): string {
+export function formatPeriodTime(totalMinutes: number): string {
   const hours24 = Math.floor(totalMinutes / 60) % 24
   const mins = totalMinutes % 60
   const period = hours24 < 12 ? '오전' : '오후'

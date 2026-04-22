@@ -4,7 +4,7 @@ import { Activity, WakeWindow } from '@/lib/supabase/types'
 import { ActivityList } from './ActivityList'
 import { AddCustomActivity } from './AddCustomActivity'
 import { ChatBox } from './ChatBox'
-import { formatDuration, formatTimeRange } from '@/lib/utils/time'
+import { formatDuration, formatTimeRange, formatPeriodTime, parseTimeString } from '@/lib/utils/time'
 
 interface Props {
   windowIndex: number
@@ -16,6 +16,7 @@ interface Props {
   date: string
   overrideActivities?: Activity[]
   onActivitiesLoaded?: (windowIndex: number, activities: Activity[]) => void
+  actualEndTime?: string
 }
 
 export function WakeWindowCard({
@@ -28,6 +29,7 @@ export function WakeWindowCard({
   date,
   overrideActivities,
   onActivitiesLoaded,
+  actualEndTime,
 }: Props) {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
@@ -118,9 +120,17 @@ export function WakeWindowCard({
     setLogsRefreshKey(prev => prev + 1)
   }
 
-  const timeRange = wakeWindow.start_time
-    ? formatTimeRange(wakeWindow.start_time, wakeWindow.duration_minutes)
-    : null
+  const timeRange = (() => {
+    if (!wakeWindow.start_time) return null
+    if (actualEndTime) {
+      const { hours: sh, minutes: sm } = parseTimeString(wakeWindow.start_time)
+      const { hours: eh, minutes: em } = parseTimeString(actualEndTime)
+      const startLabel = formatPeriodTime(sh * 60 + sm)
+      const endLabel = formatPeriodTime(eh * 60 + em)
+      return `${startLabel}~${endLabel}`
+    }
+    return formatTimeRange(wakeWindow.start_time, wakeWindow.duration_minutes)
+  })()
 
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm">

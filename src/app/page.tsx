@@ -20,16 +20,13 @@ function formatTodayLabel(): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${DAY_LABELS[d.getDay()]}`
 }
 
-function applyTimeOverrides(
+function applyStartTimeOverrides(
   wakeWindows: WakeWindow[],
-  timeOverrides: Record<number, string>
+  startOverrides: Record<number, string>
 ): WakeWindow[] {
   return wakeWindows.map((ww, index) => {
-    const overrideTime = timeOverrides[index]
-    if (overrideTime) {
-      return { ...ww, start_time: overrideTime }
-    }
-    return ww
+    const override = startOverrides[index]
+    return override ? { ...ww, start_time: override } : ww
   })
 }
 
@@ -38,44 +35,46 @@ export default function TodayPage() {
   const { profile, loading: profileLoading, isLoggedIn } = useProfile()
   const { wakeWindows: rawWakeWindows, loading: windowsLoading } = useWakeWindows(profile?.id)
   const [activitiesByWindow, setActivitiesByWindow] = useState<Record<number, Activity[]>>({})
-  const [timeOverrides, setTimeOverrides] = useState<Record<number, string>>({})
+  // napIndex N의 sleepEnd → wakeWindows[N].start_time 오버라이드
+  const [startOverrides, setStartOverrides] = useState<Record<number, string>>({})
+  // napIndex N의 sleepStart → wakeWindows[N-1]의 실제 종료 시간 표시
+  const [napSleepStarts, setNapSleepStarts] = useState<Record<number, string>>({})
 
   useEffect(() => {
-    if (isLoggedIn === false) {
-      router.push('/login')
-    }
+    if (isLoggedIn === false) router.push('/login')
   }, [isLoggedIn, router])
 
   useEffect(() => {
-    if (isLoggedIn === true && !profileLoading && !profile) {
-      router.push('/onboarding')
-    }
+    if (isLoggedIn === true && !profileLoading && !profile) router.push('/onboarding')
   }, [isLoggedIn, profile, profileLoading, router])
 
   const today = useMemo(() => getTodayString(), [])
   const todayLabel = useMemo(() => formatTodayLabel(), [])
 
-  const handleSleepChanged = useCallback((napIndex: number, sleepEnd: string | null) => {
-    setTimeOverrides(prev => {
-      if (!sleepEnd) {
-        const next = { ...prev }
-        delete next[napIndex]
-        return next
-      }
-      return { ...prev, [napIndex]: sleepEnd }
+  const handleSleepChanged = useCallback((napIndex: number, sleepStart: string | null, sleepEnd: string | null) => {
+    // sleepEnd → 다음 깨시(index=napIndex)의 start_time
+    setStartOverrides(prev => {
+      const next = { ...prev }
+      if (sleepEnd) next[napIndex] = sleepEnd
+      else delete next[napIndex]
+      return next
+    })
+    // sleepStart (낮잠) → 이전 깨시(index=napIndex-1)의 실제 종료 시간
+    setNapSleepStarts(prev => {
+      const next = { ...prev }
+      if (sleepStart && napIndex > 0) next[napIndex] = sleepStart
+      else delete next[napIndex]
+      return next
     })
   }, [])
 
   const wakeWindows = useMemo(
-    () => applyTimeOverrides(rawWakeWindows, timeOverrides),
-    [rawWakeWindows, timeOverrides]
+    () => applyStartTimeOverrides(rawWakeWindows, startOverrides),
+    [rawWakeWindows, startOverrides]
   )
 
   const handleScheduleUpdate = useCallback((windowIndex: number, activities: Activity[]) => {
-    setActivitiesByWindow(prev => ({
-      ...prev,
-      [windowIndex]: activities,
-    }))
+    setActivitiesByWindow(prev => ({ ...prev, [windowIndex]: activities }))
   }, [])
 
   const handleActivitiesLoaded = useCallback((windowIndex: number, activities: Activity[]) => {
@@ -89,20 +88,17 @@ export default function TodayPage() {
     if (!profile?.id || !today) return
     async function loadSleepLogs() {
       try {
-        const res = await fetch(
-          `/api/sleep-logs?profileId=${profile!.id}&date=${today}`
-        )
+        const res = await fetch(`/api/sleep-logs?profileId=${profile!.id}&date=${today}`)
         if (!res.ok) return
         const data = await res.json()
-        const overrides: Record<number, string> = {}
+        const starts: Record<number, string> = {}
+        const napStarts: Record<number, string> = {}
         for (const log of data.sleepLogs ?? []) {
-          if (log.sleep_end) {
-            overrides[log.nap_index] = log.sleep_end
-          }
+          if (log.sleep_end) starts[log.nap_index] = log.sleep_end
+          if (log.sleep_start && log.nap_index > 0) napStarts[log.nap_index] = log.sleep_start
         }
-        if (Object.keys(overrides).length > 0) {
-          setTimeOverrides(overrides)
-        }
+        if (Object.keys(starts).length > 0) setStartOverrides(starts)
+        if (Object.keys(napStarts).length > 0) setNapSleepStarts(napStarts)
       } catch {
         // 실패 시 무시
       }
@@ -176,6 +172,7 @@ export default function TodayPage() {
               date={today}
               overrideActivities={activitiesByWindow[index]}
               onActivitiesLoaded={handleActivitiesLoaded}
+              actualEndTime={napSleepStarts[index + 1]}
             />
 
             {index === wakeWindows.length - 1 && (

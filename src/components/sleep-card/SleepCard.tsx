@@ -7,7 +7,7 @@ interface Props {
   date: string
   napIndex: number
   totalWindows: number
-  onSleepChanged: (napIndex: number, sleepEnd: string | null) => void
+  onSleepChanged: (napIndex: number, sleepStart: string | null, sleepEnd: string | null) => void
 }
 
 type CardType = 'overnight' | 'nap' | 'bedtime'
@@ -79,9 +79,7 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
           setSleepStart(log.sleep_start)
           setSleepEnd(log.sleep_end)
           // 로드된 깬 시간을 부모에도 즉시 알려서 start_time 오버라이드 적용
-          if (showEndInput && log.sleep_end) {
-            onSleepChanged(napIndex, log.sleep_end)
-          }
+          onSleepChanged(napIndex, log.sleep_start ?? null, log.sleep_end ?? null)
         }
       } catch {
         // 실패 시 무시
@@ -107,9 +105,7 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
           sleepEnd: end,
         }),
       })
-      if (showEndInput) {
-        onSleepChanged(napIndex, end)
-      }
+      onSleepChanged(napIndex, start, end)
     } catch {
       // 실패 시 무시
     } finally {
