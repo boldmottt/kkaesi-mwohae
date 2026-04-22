@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Activity, WakeWindow } from '@/lib/supabase/types'
 import { ActivityList } from './ActivityList'
+import { AddCustomActivity } from './AddCustomActivity'
 import { ChatBox } from './ChatBox'
 import { formatDuration, formatTimeRange } from '@/lib/utils/time'
 
@@ -32,6 +33,7 @@ export function WakeWindowCard({
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [logsRefreshKey, setLogsRefreshKey] = useState(0)
 
   const requestBody = {
     profileId,
@@ -112,6 +114,10 @@ export function WakeWindowCard({
     }
   }, [profileId, date, windowIndex, onActivitiesLoaded])
 
+  function handleCustomActivitySaved() {
+    setLogsRefreshKey(prev => prev + 1)
+  }
+
   const timeRange = wakeWindow.start_time
     ? formatTimeRange(wakeWindow.start_time, wakeWindow.duration_minutes)
     : null
@@ -157,8 +163,16 @@ export function WakeWindowCard({
           profileId={profileId}
           date={date}
           windowIndex={windowIndex}
+          refreshKey={logsRefreshKey}
         />
       )}
+
+      <AddCustomActivity
+        profileId={profileId}
+        date={date}
+        windowIndex={windowIndex}
+        onSaved={handleCustomActivitySaved}
+      />
 
       <ChatBox
         windowIndex={windowIndex}
