@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { profileId, date, windowIndex, activityName, activityDuration, activityEffect, did } =
+    const { profileId, date, windowIndex, activityName, activityDuration, activityEffect, did, custom } =
       await req.json()
 
     if (!profileId || !date || windowIndex === undefined || !activityName) {
@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
           activity_duration: activityDuration ?? null,
           activity_effect: activityEffect ?? null,
           did: did ?? false,
+          custom: custom ?? false,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'profile_id,log_date,window_index,activity_name' }
