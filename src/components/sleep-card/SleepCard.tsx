@@ -78,6 +78,10 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
         if (log) {
           setSleepStart(log.sleep_start)
           setSleepEnd(log.sleep_end)
+          // 로드된 깬 시간을 부모에도 즉시 알려서 start_time 오버라이드 적용
+          if (showEndInput && log.sleep_end) {
+            onSleepChanged(napIndex, log.sleep_end)
+          }
         }
       } catch {
         // 실패 시 무시
@@ -86,7 +90,8 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
       }
     }
     load()
-  }, [profileId, date, napIndex])
+  // onSleepChanged는 useCallback이므로 deps에 포함해도 무한루프 없음
+  }, [profileId, date, napIndex, showEndInput, onSleepChanged])
 
   async function save(start: string | null, end: string | null) {
     setSaving(true)
@@ -106,20 +111,32 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
         onSleepChanged(napIndex, end)
       }
     } catch {
-      console.error('Failed to save sleep log')
+      // 실패 시 무시
     } finally {
       setSaving(false)
     }
   }
 
   function handleStartChange(value: string) {
-    setSleepStart(value || null)
-    save(value || null, sleepEnd)
+    const next = value || null
+    setSleepStart(next)
+    save(next, sleepEnd)
   }
 
   function handleEndChange(value: string) {
-    setSleepEnd(value || null)
-    save(sleepStart, value || null)
+    const next = value || null
+    setSleepEnd(next)
+    save(sleepStart, next)
+  }
+
+  function handleClearStart() {
+    setSleepStart(null)
+    save(null, sleepEnd)
+  }
+
+  function handleClearEnd() {
+    setSleepEnd(null)
+    save(sleepStart, null)
   }
 
   function getSummaryText(): string | null {
@@ -170,34 +187,58 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
       </button>
 
       {isOpen && loaded && (
-        <div className="px-4 pb-4 flex gap-3 items-center">
+        <div className="px-4 pb-4 flex gap-3 items-end">
           {showStartInput && (
             <div className="flex-1">
               <label className="text-xs text-gray-400 block mb-1">잠든 시간</label>
-              <input
-                type="time"
-                value={sleepStart ?? ''}
-                onChange={e => handleStartChange(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-300"
-              />
+              <div className="flex gap-1 items-center">
+                <input
+                  type="time"
+                  value={sleepStart ?? ''}
+                  onChange={e => handleStartChange(e.target.value)}
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-300"
+                />
+                {sleepStart && (
+                  <button
+                    type="button"
+                    onClick={handleClearStart}
+                    className="text-gray-300 hover:text-gray-500 text-lg leading-none px-1"
+                    aria-label="잠든 시간 지우기"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             </div>
           )}
           {showStartInput && showEndInput && (
-            <div className="text-gray-300 mt-5">→</div>
+            <div className="text-gray-300 pb-2.5">→</div>
           )}
           {showEndInput && (
             <div className="flex-1">
               <label className="text-xs text-gray-400 block mb-1">깬 시간</label>
-              <input
-                type="time"
-                value={sleepEnd ?? ''}
-                onChange={e => handleEndChange(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-300"
-              />
+              <div className="flex gap-1 items-center">
+                <input
+                  type="time"
+                  value={sleepEnd ?? ''}
+                  onChange={e => handleEndChange(e.target.value)}
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-300"
+                />
+                {sleepEnd && (
+                  <button
+                    type="button"
+                    onClick={handleClearEnd}
+                    className="text-gray-300 hover:text-gray-500 text-lg leading-none px-1"
+                    aria-label="깬 시간 지우기"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             </div>
           )}
           {saving && (
-            <span className="text-xs text-gray-300 mt-5">저장 중...</span>
+            <span className="text-xs text-gray-300 pb-2.5">저장 중...</span>
           )}
         </div>
       )}
