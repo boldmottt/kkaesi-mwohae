@@ -4,9 +4,10 @@ import { useRouter } from 'next/navigation'
 import { useProfile } from '@/hooks/useProfile'
 import { useWakeWindows } from '@/hooks/useWakeWindows'
 import { WakeWindowCard } from '@/components/wake-window-card/WakeWindowCard'
+import { SleepCard } from '@/components/sleep-card/SleepCard'
 import { DailyChat } from '@/components/daily-chat/DailyChat'
 import { getAgeInMonths, getAgeInDays } from '@/lib/utils/age'
-import { Activity } from '@/lib/supabase/types'
+import { Activity, WakeWindow } from '@/lib/supabase/types'
 
 function getTodayString(): string {
   const d = new Date()
@@ -19,11 +20,25 @@ function formatTodayLabel(): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${DAY_LABELS[d.getDay()]}`
 }
 
+function applyTimeOverrides(
+  wakeWindows: WakeWindow[],
+  timeOverrides: Record<number, string>
+): WakeWindow[] {
+  return wakeWindows.map((ww, index) => {
+    const overrideTime = timeOverrides[index]
+    if (overrideTime) {
+      return { ...ww, start_time: overrideTime }
+    }
+    return ww
+  })
+}
+
 export default function TodayPage() {
   const router = useRouter()
   const { profile, loading: profileLoading, isLoggedIn } = useProfile()
-  const { wakeWindows, loading: windowsLoading } = useWakeWindows(profile?.id)
+  const { wakeWindows: rawWakeWindows, loading: windowsLoading } = useWakeWindows(profile?.id)
   const [activitiesByWindow, setActivitiesByWindow] = useState<Record<number, Activity[]>>({})
+  const [timeOverrides, setTimeOverrides] = useState<Record<number, string>>({})
 
   useEffect(() => {
     if (isLoggedIn === false) {
@@ -40,6 +55,22 @@ export default function TodayPage() {
   const today = useMemo(() => getTodayString(), [])
   const todayLabel = useMemo(() => formatTodayLabel(), [])
 
+  const handleSleepChanged = useCallback((napIndex: number, sleepEnd: string | null) => {
+    setTimeOverrides(prev => {
+      if (!sleepEnd) {
+        const next = { ...prev }
+        delete next[napIndex]
+        return next
+      }
+      return { ...prev, [napIndex]: sleepEnd }
+    })
+  }, [])
+
+  const wakeWindows = useMemo(
+    () => applyTimeOverrides(rawWakeWindows, timeOverrides),
+    [rawWakeWindows, timeOverrides]
+  )
+
   const handleScheduleUpdate = useCallback((windowIndex: number, activities: Activity[]) => {
     setActivitiesByWindow(prev => ({
       ...prev,
@@ -53,6 +84,31 @@ export default function TodayPage() {
       return { ...prev, [windowIndex]: activities }
     })
   }, [])
+
+  useEffect(() => {
+    if (!profile?.id || !today) return
+    async function loadSleepLogs() {
+      try {
+        const res = await fetch(
+          `/api/sleep-logs?profileId=${profile!.id}&date=${today}`
+        )
+        if (!res.ok) return
+        const data = await res.json()
+        const overrides: Record<number, string> = {}
+        for (const log of data.sleepLogs ?? []) {
+          if (log.sleep_end) {
+            overrides[log.nap_index] = log.sleep_end
+          }
+        }
+        if (Object.keys(overrides).length > 0) {
+          setTimeOverrides(overrides)
+        }
+      } catch {
+        // 실패 시 무시
+      }
+    }
+    loadSleepLogs()
+  }, [profile?.id, today])
 
   if (isLoggedIn === null || profileLoading || windowsLoading) {
     return (
@@ -99,20 +155,39 @@ export default function TodayPage() {
         onScheduleUpdate={handleScheduleUpdate}
       />
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {wakeWindows.map((ww, index) => (
-          <WakeWindowCard
-            key={ww.id}
-            windowIndex={index}
-            totalWindows={wakeWindows.length}
-            wakeWindow={ww}
-            profileId={profile.id}
-            ageMonths={ageMonths}
-            ageDays={ageDays}
-            date={today}
-            overrideActivities={activitiesByWindow[index]}
-            onActivitiesLoaded={handleActivitiesLoaded}
-          />
+          <div key={ww.id} className="flex flex-col gap-3">
+            <SleepCard
+              profileId={profile.id}
+              date={today}
+              napIndex={index}
+              totalWindows={wakeWindows.length}
+              onSleepChanged={handleSleepChanged}
+            />
+
+            <WakeWindowCard
+              windowIndex={index}
+              totalWindows={wakeWindows.length}
+              wakeWindow={ww}
+              profileId={profile.id}
+              ageMonths={ageMonths}
+              ageDays={ageDays}
+              date={today}
+              overrideActivities={activitiesByWindow[index]}
+              onActivitiesLoaded={handleActivitiesLoaded}
+            />
+
+            {index === wakeWindows.length - 1 && (
+              <SleepCard
+                profileId={profile.id}
+                date={today}
+                napIndex={wakeWindows.length}
+                totalWindows={wakeWindows.length}
+                onSleepChanged={handleSleepChanged}
+              />
+            )}
+          </div>
         ))}
       </div>
     </main>

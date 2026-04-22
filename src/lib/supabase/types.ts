@@ -109,6 +109,17 @@ export interface DailyRoutineStatus {
   created_at: string
 }
 
+export interface SleepLog {
+  id: string
+  profile_id: string
+  log_date: string
+  nap_index: number
+  sleep_start: string | null
+  sleep_end: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface CustomActivityTag {
   id: string
   profile_id: string
