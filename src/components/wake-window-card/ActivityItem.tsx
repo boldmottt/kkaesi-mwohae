@@ -47,26 +47,23 @@ function SadFace({ filled }: { filled: boolean }) {
   )
 }
 
-function buildLogPayload(args: {
-  profileId: string
-  date: string
-  windowIndex: number
-  activity: Activity
-  did: boolean
-  rating: Rating
-  note: string | null
-}) {
-  return {
-    profileId: args.profileId,
-    logDate: args.date,
-    windowIndex: args.windowIndex,
-    activityName: args.activity.name,
-    activityDuration: args.activity.duration,
-    activityEffect: args.activity.effect,
-    did: args.did,
-    rating: args.rating,
-    note: args.note,
-  }
+function parseDurationMinutes(durationStr: string): number {
+  const hourMin = durationStr.match(/(\d+)\s*시간\s*(\d+)\s*분/)
+  if (hourMin) return parseInt(hourMin[1], 10) * 60 + parseInt(hourMin[2], 10)
+  const hour = durationStr.match(/(\d+)\s*시간/)
+  if (hour) return parseInt(hour[1], 10) * 60
+  const min = durationStr.match(/(\d+)\s*분/)
+  if (min) return parseInt(min[1], 10)
+  return 0
+}
+
+function formatMinutes(mins: number): string {
+  if (mins <= 0) return '0분'
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  if (h === 0) return `${m}분`
+  if (m === 0) return `${h}시간`
+  return `${h}시간 ${m}분`
 }
 
 export function ActivityItem({
@@ -82,6 +79,10 @@ export function ActivityItem({
   const [rating, setRating] = useState<Rating>((log?.rating ?? 0) as Rating)
   const [note, setNote] = useState(log?.note ?? '')
   const [saving, setSaving] = useState(false)
+  const [durationEditing, setDurationEditing] = useState(false)
+  const [actualDuration, setActualDuration] = useState<string>(
+    log?.activity_duration ?? activity.duration
+  )
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const isNoteLocallyDirty = useRef(false)
@@ -93,6 +94,7 @@ export function ActivityItem({
       setDid(log.did ?? false)
       setRating((log.rating ?? 0) as Rating)
       setNote(log.note ?? '')
+      setActualDuration(log.activity_duration ?? activity.duration)
       hasInitialized.current = true
       return
     }
@@ -100,30 +102,36 @@ export function ActivityItem({
     if (hasInitialized.current && log) {
       setDid(log.did ?? false)
       setRating((log.rating ?? 0) as Rating)
+      setActualDuration(log.activity_duration ?? activity.duration)
       if (!isNoteLocallyDirty.current && !isSaving.current) {
         setNote(log.note ?? '')
       }
     }
-  }, [log])
+  }, [log, activity.duration])
 
-  const save = useCallback(async (next: { did: boolean; rating: Rating; note: string | null }) => {
+  const save = useCallback(async (next: {
+    did: boolean
+    rating: Rating
+    note: string | null
+    duration?: string
+  }) => {
     setSaving(true)
     isSaving.current = true
     try {
       const res = await fetch('/api/activity-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-          buildLogPayload({
-            profileId,
-            date,
-            windowIndex,
-            activity,
-            did: next.did,
-            rating: next.rating,
-            note: next.note,
-          })
-        ),
+        body: JSON.stringify({
+          profileId,
+          logDate: date,
+          windowIndex,
+          activityName: activity.name,
+          activityDuration: next.duration ?? actualDuration,
+          activityEffect: activity.effect,
+          did: next.did,
+          rating: next.rating,
+          note: next.note,
+        }),
       })
       const data = await res.json()
       if (res.ok && data.log) {
@@ -133,14 +141,14 @@ export function ActivityItem({
       setSaving(false)
       isSaving.current = false
     }
-  }, [profileId, date, windowIndex, activity, onChange])
+  }, [profileId, date, windowIndex, activity, onChange, actualDuration])
 
   function toggleDid() {
     const nextDid = !did
     setDid(nextDid)
-    const nextRating: Rating = 0
-    setRating(nextRating)
-    save({ did: nextDid, rating: nextRating, note: note.trim() ? note : null })
+    setRating(0)
+    if (!nextDid) setDurationEditing(false)
+    save({ did: nextDid, rating: 0, note: note.trim() ? note : null })
   }
 
   function setRatingValue(next: Rating) {
@@ -148,6 +156,19 @@ export function ActivityItem({
     setRating(value)
     if (!did) setDid(true)
     save({ did: true, rating: value, note: note.trim() ? note : null })
+  }
+
+  function handleDurationAdd(addMinutes: number) {
+    const current = parseDurationMinutes(actualDuration)
+    const next = current + addMinutes
+    const nextStr = formatMinutes(next)
+    setActualDuration(nextStr)
+    save({ did: true, rating, note: note.trim() ? note : null, duration: nextStr })
+  }
+
+  function handleDurationReset() {
+    setActualDuration(activity.duration)
+    save({ did: true, rating, note: note.trim() ? note : null, duration: activity.duration })
   }
 
   function onNoteChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
@@ -173,23 +194,25 @@ export function ActivityItem({
           fetch('/api/activity-logs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(
-              buildLogPayload({
-                profileId,
-                date,
-                windowIndex,
-                activity,
-                did,
-                rating,
-                note: currentNote.trim() || null,
-              })
-            ),
+            body: JSON.stringify({
+              profileId,
+              logDate: date,
+              windowIndex,
+              activityName: activity.name,
+              activityDuration: actualDuration,
+              activityEffect: activity.effect,
+              did,
+              rating,
+              note: currentNote.trim() || null,
+            }),
           }).catch(() => {})
         }
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const durationChanged = actualDuration !== activity.duration
 
   return (
     <li className="flex gap-3 items-start">
@@ -216,13 +239,63 @@ export function ActivityItem({
               <span className={`font-semibold ${did ? 'line-through text-gray-400' : ''}`}>
                 {activity.name}
               </span>
-              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                {activity.duration}
-              </span>
+              <button
+                type="button"
+                onClick={() => did && setDurationEditing(!durationEditing)}
+                className={`text-xs px-2 py-0.5 rounded-full transition ${
+                  durationChanged
+                    ? 'bg-amber-100 text-amber-600 font-semibold'
+                    : 'bg-gray-100 text-gray-400'
+                } ${did ? 'hover:bg-amber-100 cursor-pointer' : 'cursor-default'}`}
+              >
+                {did ? actualDuration : activity.duration}
+              </button>
             </div>
             <p className="text-sm text-gray-500 mt-0.5">{activity.effect}</p>
           </div>
         </div>
+
+        {did && durationEditing && (
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleDurationAdd(1)}
+              className="px-2.5 py-1 bg-gray-100 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-200 active:bg-gray-300 transition-colors"
+            >
+              +1분
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDurationAdd(5)}
+              className="px-2.5 py-1 bg-gray-100 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-200 active:bg-gray-300 transition-colors"
+            >
+              +5분
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDurationAdd(30)}
+              className="px-2.5 py-1 bg-gray-100 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-200 active:bg-gray-300 transition-colors"
+            >
+              +30분
+            </button>
+            {durationChanged && (
+              <button
+                type="button"
+                onClick={handleDurationReset}
+                className="px-2.5 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                초기화
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setDurationEditing(false)}
+              className="px-2.5 py-1 text-xs text-amber-500 font-semibold"
+            >
+              완료
+            </button>
+          </div>
+        )}
 
         {did && (
           <div className="flex items-center gap-1 mt-2">

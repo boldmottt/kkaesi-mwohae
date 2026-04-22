@@ -57,6 +57,17 @@ export function WakeWindowCard({
   }, [overrideActivities])
 
   useEffect(() => {
+    const lsKey = `activities_v1_${profileId}_${date}_${windowIndex}_${wakeWindow.duration_minutes}_${wakeWindow.routines ?? ''}`
+
+    try {
+      const stored = localStorage.getItem(lsKey)
+      if (stored) {
+        setActivities(JSON.parse(stored))
+        setLoading(false)
+        return
+      }
+    } catch {}
+
     async function fetchActivities() {
       if (overrideActivities && overrideActivities.length > 0) return
 
