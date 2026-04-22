@@ -64,6 +64,7 @@ export interface ActivityLog {
   did: boolean
   rating: -1 | 0 | 1
   note: string | null
+  is_custom: boolean
   created_at: string
   updated_at: string
 }
@@ -105,5 +106,14 @@ export interface DailyRoutineStatus {
   window_index: number
   routine_text: string
   skipped: boolean
+  created_at: string
+}
+
+export interface CustomActivityTag {
+  id: string
+  profile_id: string
+  label: string
+  use_count: number
+  last_used_at: string
   created_at: string
 }
