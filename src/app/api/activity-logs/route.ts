@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
       rating,
       note,
       isCustom,
+      category,
     } = body
 
     if (!profileId || !logDate || windowIndex === undefined || !activityName) {
@@ -98,6 +99,7 @@ export async function POST(req: NextRequest) {
           rating: rating ?? 0,
           note: note ?? null,
           is_custom: isCustom ?? false,
+          category: (category as string) ?? 'other',
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'profile_id,log_date,window_index,activity_name' }

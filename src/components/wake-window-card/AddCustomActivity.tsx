@@ -15,6 +15,7 @@ export function AddCustomActivity({ profileId, date, windowIndex, onSaved }: Pro
   const [step, setStep] = useState<Step>('closed')
   const [tags, setTags] = useState<CustomActivityTag[]>([])
   const [selectedLabel, setSelectedLabel] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [minutes, setMinutes] = useState(0)
   const [newTagInput, setNewTagInput] = useState('')
   const [showNewTagInput, setShowNewTagInput] = useState(false)
@@ -37,6 +38,7 @@ export function AddCustomActivity({ profileId, date, windowIndex, onSaved }: Pro
   function handleOpen() {
     setStep('select_tag')
     setSelectedLabel('')
+    setSelectedCategory(null)
     setMinutes(0)
     setShowNewTagInput(false)
     setNewTagInput('')
@@ -45,13 +47,15 @@ export function AddCustomActivity({ profileId, date, windowIndex, onSaved }: Pro
   function handleClose() {
     setStep('closed')
     setSelectedLabel('')
+    setSelectedCategory(null)
     setMinutes(0)
     setShowNewTagInput(false)
     setNewTagInput('')
   }
 
-  function handleSelectTag(label: string) {
-    setSelectedLabel(label)
+  function handleSelectTag(tag: CustomActivityTag) {
+    setSelectedLabel(tag.label)
+    setSelectedCategory(tag.category ?? null)
     setMinutes(0)
     setStep('set_duration')
   }
@@ -60,22 +64,45 @@ export function AddCustomActivity({ profileId, date, windowIndex, onSaved }: Pro
     const trimmed = newTagInput.trim()
     if (!trimmed) return
     setSelectedLabel(trimmed)
+    setSelectedCategory(null) // AI가 분류할 예정
     setMinutes(0)
     setShowNewTagInput(false)
     setNewTagInput('')
     setStep('set_duration')
   }
 
+  async function classifyActivity(activityName: string): Promise<string> {
+    try {
+      const res = await fetch('/api/classify-activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activityName }),
+      })
+      const data = await res.json()
+      return data.category ?? 'other'
+    } catch {
+      return 'other'
+    }
+  }
+
   async function handleSave() {
     if (!selectedLabel || minutes <= 0) return
     setSaving(true)
     try {
+      // 카테고리가 없으면 AI에게 분류 요청
+      let category = selectedCategory
+      if (!category || category === 'other') {
+        category = await classifyActivity(selectedLabel)
+      }
+
+      // 태그 저장 (카테고리 포함)
       await fetch('/api/custom-tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId, label: selectedLabel }),
+        body: JSON.stringify({ profileId, label: selectedLabel, category }),
       })
 
+      // activity_logs에 저장
       await fetch('/api/activity-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,6 +117,7 @@ export function AddCustomActivity({ profileId, date, windowIndex, onSaved }: Pro
           rating: 0,
           note: null,
           isCustom: true,
+          category,
         }),
       })
 
@@ -134,7 +162,7 @@ export function AddCustomActivity({ profileId, date, windowIndex, onSaved }: Pro
               <button
                 key={tag.id}
                 type="button"
-                onClick={() => handleSelectTag(tag.label)}
+                onClick={() => handleSelectTag(tag)}
                 className="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-full text-sm hover:bg-amber-100 transition-colors"
               >
                 {tag.label}

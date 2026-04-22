@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
-    const { profileId, label } = await req.json()
+    const { profileId, label, category } = await req.json()
 
     if (!profileId || !label?.trim()) {
       return NextResponse.json({ error: 'profileId and label required' }, { status: 400 })
@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
         .update({
           use_count: existing.use_count + 1,
           last_used_at: new Date().toISOString(),
+          ...(category ? { category } : {}),
         })
         .eq('id', existing.id)
         .select()
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
           label: trimmedLabel,
           use_count: 1,
           last_used_at: new Date().toISOString(),
+          category: (category as string) ?? 'other',
         })
         .select()
         .single()

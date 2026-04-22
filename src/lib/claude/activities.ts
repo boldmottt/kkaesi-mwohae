@@ -74,6 +74,7 @@ export async function generateActivities(req: ActivityRequest): Promise<Activity
       name: `📌 ${routines}`,
       duration: `${routineDurationMinutes}분`,
       effect: '사용자 지정 고정 루틴',
+      category: 'other' as const,
     }
   }
 
@@ -114,12 +115,19 @@ ${evidenceContext}
 6. **다양성**: 신체/감각/언어/정서/인지 영역을 고루 섞기.${routinePromptBlock}
 
 **응답 형식 (반드시 이 형식만):**
-JSON 배열만 출력. 각 원소는 {"name","duration","effect"}.
+JSON 배열만 출력. 각 원소는 {"name","duration","effect","category"}.
 - duration은 "숫자 + 분" 형식 ("5분", "10분")
 - effect에는 발달 효과와 함께 근거(WHO/CDC/AAP 등)를 간단히 표기
+- category는 반드시 다음 6개 중 하나: "physical", "sensory", "language", "cognitive", "emotional", "other"
+  - physical: 터미타임, 뒤집기, 기기, 걸음마, 발차기, 앉기 연습 등 신체/운동 활동
+  - sensory: 촉감 놀이, 딸랑이, 물놀이, 거울, 모빌, 다양한 질감 탐색 등 감각 자극 활동
+  - language: 노래, 그림책, 말걸기, 옹알이 대화, 손유희, 이름 불러주기 등 언어 활동
+  - cognitive: 까꿍, 숨긴 물건 찾기, 원인-결과 장난감, 블록 넣고 빼기, 모방 놀이 등 인지 활동
+  - emotional: 마사지, 안아주기, 표정 따라하기, 눈맞춤, 스킨십, 자장가 등 정서/사회성 활동
+  - other: 고정 루틴, 자유 탐색, 쉬는 시간 등 위 카테고리에 맞지 않는 활동
 
 예시:
-[{"name":"터미타임","duration":"5분","effect":"상체 근력 발달 (WHO: 하루 30분+ 권장)"}]`
+[{"name":"터미타임","duration":"5분","effect":"상체 근력 발달 (WHO: 하루 30분+ 권장)","category":"physical"}]`
 
   const userPrompt = `**이 깨시에서 활동을 추천할 가용 시간: ${availableMinutes}분**
 (전체 깨시 ${durationMinutes}분${routines ? ` - 고정 루틴 ${routineDurationMinutes}분` : ''})

@@ -80,6 +80,7 @@ export function ActivityItem({
   const [note, setNote] = useState(log?.note ?? '')
   const [saving, setSaving] = useState(false)
   const [durationEditing, setDurationEditing] = useState(false)
+  // 실제 활동 시간 (로그에 저장된 값 우선, 없으면 추천 시간)
   const [actualDuration, setActualDuration] = useState<string>(
     log?.activity_duration ?? activity.duration
   )
@@ -131,6 +132,7 @@ export function ActivityItem({
           did: next.did,
           rating: next.rating,
           note: next.note,
+          category: (activity as { category?: string }).category ?? 'other',
         }),
       })
       const data = await res.json()
@@ -167,8 +169,8 @@ export function ActivityItem({
   }
 
   function handleDurationReset() {
-    setActualDuration('0분')
-    save({ did: true, rating, note: note.trim() ? note : null, duration: '0분' })
+    setActualDuration(activity.duration)
+    save({ did: true, rating, note: note.trim() ? note : null, duration: activity.duration })
   }
 
   function onNoteChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
@@ -204,6 +206,7 @@ export function ActivityItem({
               did,
               rating,
               note: currentNote.trim() || null,
+              category: (activity as { category?: string }).category ?? 'other',
             }),
           }).catch(() => {})
         }
@@ -239,6 +242,10 @@ export function ActivityItem({
               <span className={`font-semibold ${did ? 'line-through text-gray-400' : ''}`}>
                 {activity.name}
               </span>
+<<<<<<< HEAD
+=======
+              {/* 시간 배지 — 체크 후 탭하면 수정 모드 */}
+>>>>>>> baf3600 (feat: activity category 필드 추가 — AI 자동 분류 + DB 저장)
               <button
                 type="button"
                 onClick={() => did && setDurationEditing(!durationEditing)}
@@ -255,6 +262,10 @@ export function ActivityItem({
           </div>
         </div>
 
+<<<<<<< HEAD
+=======
+        {/* 시간 수정 UI — 체크 + 수정 모드일 때만 */}
+>>>>>>> baf3600 (feat: activity category 필드 추가 — AI 자동 분류 + DB 저장)
         {did && durationEditing && (
           <div className="mt-2 flex items-center gap-2">
             <button
@@ -278,6 +289,7 @@ export function ActivityItem({
             >
               +30분
             </button>
+<<<<<<< HEAD
             <button
               type="button"
               onClick={handleDurationReset}
@@ -285,6 +297,17 @@ export function ActivityItem({
             >
               초기화
             </button>
+=======
+            {durationChanged && (
+              <button
+                type="button"
+                onClick={handleDurationReset}
+                className="px-2.5 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                초기화
+              </button>
+            )}
+>>>>>>> baf3600 (feat: activity category 필드 추가 — AI 자동 분류 + DB 저장)
             <button
               type="button"
               onClick={() => setDurationEditing(false)}
@@ -295,6 +318,10 @@ export function ActivityItem({
           </div>
         )}
 
+<<<<<<< HEAD
+=======
+        {/* 3단계 표정 피드백 */}
+>>>>>>> baf3600 (feat: activity category 필드 추가 — AI 자동 분류 + DB 저장)
         {did && (
           <div className="flex items-center gap-1 mt-2">
             <button

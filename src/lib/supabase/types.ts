@@ -1,7 +1,10 @@
+export type ActivityCategory = 'physical' | 'sensory' | 'language' | 'cognitive' | 'emotional' | 'other'
+
 export interface Activity {
   name: string
   duration: string
   effect: string
+  category?: ActivityCategory
 }
 
 export interface Profile {
@@ -65,6 +68,7 @@ export interface ActivityLog {
   rating: -1 | 0 | 1
   note: string | null
   is_custom: boolean
+  category: ActivityCategory
   created_at: string
   updated_at: string
 }
@@ -126,5 +130,6 @@ export interface CustomActivityTag {
   label: string
   use_count: number
   last_used_at: string
+  category: ActivityCategory
   created_at: string
 }
