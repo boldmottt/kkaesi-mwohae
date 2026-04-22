@@ -167,8 +167,8 @@ export function ActivityItem({
   }
 
   function handleDurationReset() {
-    setActualDuration(activity.duration)
-    save({ did: true, rating, note: note.trim() ? note : null, duration: activity.duration })
+    setActualDuration('0분')
+    save({ did: true, rating, note: note.trim() ? note : null, duration: '0분' })
   }
 
   function onNoteChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
