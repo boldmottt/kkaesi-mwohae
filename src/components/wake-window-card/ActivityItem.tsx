@@ -14,37 +14,35 @@ interface Props {
 
 type Rating = -1 | 0 | 1
 
-function HeartIcon({ filled }: { filled: boolean }) {
+function SmileFace({ filled }: { filled: boolean }) {
   return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" fill={filled ? '#f59e0b' : 'none'} stroke={filled ? '#f59e0b' : '#d1d5db'} strokeWidth="1.5" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" stroke={filled ? 'white' : '#d1d5db'} strokeWidth="1.5" fill="none" />
+      <circle cx="9" cy="9.5" r="1" fill={filled ? 'white' : '#d1d5db'} />
+      <circle cx="15" cy="9.5" r="1" fill={filled ? 'white' : '#d1d5db'} />
     </svg>
   )
 }
 
-function CrossIcon({ filled }: { filled: boolean }) {
+function NeutralFace({ filled }: { filled: boolean }) {
   return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={filled ? 2.2 : 1.6}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="6" y1="6" x2="18" y2="18" />
-      <line x1="18" y1="6" x2="6" y2="18" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" fill={filled ? '#9ca3af' : 'none'} stroke={filled ? '#9ca3af' : '#d1d5db'} strokeWidth="1.5" />
+      <line x1="8" y1="14" x2="16" y2="14" stroke={filled ? 'white' : '#d1d5db'} strokeWidth="1.5" />
+      <circle cx="9" cy="9.5" r="1" fill={filled ? 'white' : '#d1d5db'} />
+      <circle cx="15" cy="9.5" r="1" fill={filled ? 'white' : '#d1d5db'} />
+    </svg>
+  )
+}
+
+function SadFace({ filled }: { filled: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" fill={filled ? '#6b7280' : 'none'} stroke={filled ? '#6b7280' : '#d1d5db'} strokeWidth="1.5" />
+      <path d="M8 16s1.5-2 4-2 4 2 4 2" stroke={filled ? 'white' : '#d1d5db'} strokeWidth="1.5" fill="none" />
+      <circle cx="9" cy="9.5" r="1" fill={filled ? 'white' : '#d1d5db'} />
+      <circle cx="15" cy="9.5" r="1" fill={filled ? 'white' : '#d1d5db'} />
     </svg>
   )
 }
@@ -140,15 +138,16 @@ export function ActivityItem({
   function toggleDid() {
     const nextDid = !did
     setDid(nextDid)
-    save({ did: nextDid, rating, note: note.trim() ? note : null })
+    const nextRating: Rating = 0
+    setRating(nextRating)
+    save({ did: nextDid, rating: nextRating, note: note.trim() ? note : null })
   }
 
   function setRatingValue(next: Rating) {
     const value: Rating = rating === next ? 0 : next
     setRating(value)
-    const nextDid = did || value !== 0
-    if (!did && value !== 0) setDid(true)
-    save({ did: nextDid, rating: value, note: note.trim() ? note : null })
+    if (!did) setDid(true)
+    save({ did: true, rating: value, note: note.trim() ? note : null })
   }
 
   function onNoteChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
@@ -165,7 +164,6 @@ export function ActivityItem({
     }, 600)
   }
 
-  // 언마운트 시 미저장 메모 즉시 저장
   useEffect(() => {
     return () => {
       if (noteTimer.current) {
@@ -211,8 +209,8 @@ export function ActivityItem({
       </button>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-amber-500 font-bold text-sm">{index + 1}.</span>
               <span className={`font-semibold ${did ? 'line-through text-gray-400' : ''}`}>
@@ -224,34 +222,42 @@ export function ActivityItem({
             </div>
             <p className="text-sm text-gray-500 mt-0.5">{activity.effect}</p>
           </div>
+        </div>
 
-          <div className="flex items-center gap-1 shrink-0">
+        {did && (
+          <div className="flex items-center gap-1 mt-2">
             <button
               type="button"
               onClick={() => setRatingValue(1)}
-              aria-label="좋아요"
-              className={`w-7 h-7 rounded-full flex items-center justify-center transition ${
-                rating === 1
-                  ? 'text-amber-500 bg-amber-50'
-                  : 'text-gray-300 hover:text-amber-400'
+              aria-label="좋아함"
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition ${
+                rating === 1 ? 'bg-amber-50' : 'hover:bg-gray-50'
               }`}
             >
-              <HeartIcon filled={rating === 1} />
+              <SmileFace filled={rating === 1} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setRatingValue(0)}
+              aria-label="보통"
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition ${
+                rating === 0 ? 'bg-gray-100' : 'hover:bg-gray-50'
+              }`}
+            >
+              <NeutralFace filled={rating === 0} />
             </button>
             <button
               type="button"
               onClick={() => setRatingValue(-1)}
-              aria-label="별로예요"
-              className={`w-7 h-7 rounded-full flex items-center justify-center transition ${
-                rating === -1
-                  ? 'text-gray-600 bg-gray-100'
-                  : 'text-gray-300 hover:text-gray-500'
+              aria-label="싫어함"
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition ${
+                rating === -1 ? 'bg-gray-100' : 'hover:bg-gray-50'
               }`}
             >
-              <CrossIcon filled={rating === -1} />
+              <SadFace filled={rating === -1} />
             </button>
           </div>
-        </div>
+        )}
 
         <textarea
           value={note}
