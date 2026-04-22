@@ -120,6 +120,15 @@ export function WakeWindowCard({
     setLogsRefreshKey(prev => prev + 1)
   }
 
+  const actualDurationMinutes = (() => {
+    if (!actualEndTime || !wakeWindow.start_time) return null
+    const { hours: sh, minutes: sm } = parseTimeString(wakeWindow.start_time)
+    const { hours: eh, minutes: em } = parseTimeString(actualEndTime)
+    let diff = (eh * 60 + em) - (sh * 60 + sm)
+    if (diff < 0) diff += 24 * 60
+    return diff > 0 ? diff : null
+  })()
+
   const timeRange = (() => {
     if (!wakeWindow.start_time) return null
     if (actualEndTime) {
@@ -138,7 +147,7 @@ export function WakeWindowCard({
         <div>
           <span className="text-amber-500 font-bold text-sm">깨시{windowIndex + 1}</span>
           <span className="ml-2 text-gray-700 font-semibold">
-            {formatDuration(wakeWindow.duration_minutes)}
+            {formatDuration(actualDurationMinutes ?? wakeWindow.duration_minutes)}
           </span>
         </div>
         <div className="flex items-center gap-2">
