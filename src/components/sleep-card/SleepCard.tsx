@@ -10,16 +10,23 @@ interface Props {
   onSleepChanged: (napIndex: number, sleepEnd: string | null) => void
 }
 
-function getLabel(napIndex: number, totalWindows: number): string {
-  if (napIndex === 0) return '간밤 수면'
-  if (napIndex > totalWindows - 1) return '취침'
+type CardType = 'overnight' | 'nap' | 'bedtime'
+
+function getCardType(napIndex: number, totalWindows: number): CardType {
+  if (napIndex === 0) return 'overnight'
+  if (napIndex >= totalWindows) return 'bedtime'
+  return 'nap'
+}
+
+function getLabel(cardType: CardType, napIndex: number): string {
+  if (cardType === 'overnight') return '간밤 수면'
+  if (cardType === 'bedtime') return '취침'
   return `${napIndex}번째 낮잠`
 }
 
-function getEmoji(napIndex: number, totalWindows: number): string {
-  if (napIndex === 0) return '🌙'
-  if (napIndex > totalWindows - 1) return '🌙'
-  return '💤'
+function getEmoji(cardType: CardType): string {
+  if (cardType === 'nap') return '💤'
+  return '🌙'
 }
 
 function formatTimeDisplay(time: string | null): string {
@@ -50,8 +57,12 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(false)
 
-  const label = getLabel(napIndex, totalWindows)
-  const emoji = getEmoji(napIndex, totalWindows)
+  const cardType = getCardType(napIndex, totalWindows)
+  const label = getLabel(cardType, napIndex)
+  const emoji = getEmoji(cardType)
+
+  const showStartInput = cardType === 'nap' || cardType === 'bedtime'
+  const showEndInput = cardType === 'nap' || cardType === 'overnight'
 
   useEffect(() => {
     async function load() {
@@ -91,7 +102,9 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
           sleepEnd: end,
         }),
       })
-      onSleepChanged(napIndex, end)
+      if (showEndInput) {
+        onSleepChanged(napIndex, end)
+      }
     } catch {
       console.error('Failed to save sleep log')
     } finally {
@@ -109,8 +122,26 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
     save(sleepStart, value || null)
   }
 
-  const duration = calcDuration(sleepStart, sleepEnd)
-  const hasData = sleepStart || sleepEnd
+  function getSummaryText(): string | null {
+    if (cardType === 'overnight' && sleepEnd) {
+      return `깬 시간 ${formatTimeDisplay(sleepEnd)}`
+    }
+    if (cardType === 'bedtime' && sleepStart) {
+      return `잠든 시간 ${formatTimeDisplay(sleepStart)}`
+    }
+    if (cardType === 'nap') {
+      if (sleepStart && sleepEnd) {
+        return `${formatTimeDisplay(sleepStart)} → ${formatTimeDisplay(sleepEnd)}`
+      }
+      if (sleepStart) return `잠든 시간 ${formatTimeDisplay(sleepStart)}`
+      if (sleepEnd) return `깬 시간 ${formatTimeDisplay(sleepEnd)}`
+    }
+    return null
+  }
+
+  const duration = cardType === 'nap' ? calcDuration(sleepStart, sleepEnd) : null
+  const hasData = (showStartInput && sleepStart) || (showEndInput && sleepEnd)
+  const summaryText = getSummaryText()
 
   return (
     <div
@@ -131,10 +162,8 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
           )}
         </div>
         <div className="flex items-center gap-2">
-          {hasData && !isOpen && (
-            <span className="text-xs text-gray-400">
-              {formatTimeDisplay(sleepStart)} → {formatTimeDisplay(sleepEnd)}
-            </span>
+          {hasData && !isOpen && summaryText && (
+            <span className="text-xs text-gray-400">{summaryText}</span>
           )}
           <span className="text-xs text-gray-400">{isOpen ? '접기' : '입력'}</span>
         </div>
@@ -142,29 +171,31 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
 
       {isOpen && loaded && (
         <div className="px-4 pb-4 flex gap-3 items-center">
-          <div className="flex-1">
-            <label className="text-xs text-gray-400 block mb-1">
-              잠든 시간
-            </label>
-            <input
-              type="time"
-              value={sleepStart ?? ''}
-              onChange={e => handleStartChange(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-300"
-            />
-          </div>
-          <div className="text-gray-300 mt-5">→</div>
-          <div className="flex-1">
-            <label className="text-xs text-gray-400 block mb-1">
-              {napIndex > totalWindows - 1 ? '잠든 시간' : '깬 시간'}
-            </label>
-            <input
-              type="time"
-              value={sleepEnd ?? ''}
-              onChange={e => handleEndChange(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-300"
-            />
-          </div>
+          {showStartInput && (
+            <div className="flex-1">
+              <label className="text-xs text-gray-400 block mb-1">잠든 시간</label>
+              <input
+                type="time"
+                value={sleepStart ?? ''}
+                onChange={e => handleStartChange(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-300"
+              />
+            </div>
+          )}
+          {showStartInput && showEndInput && (
+            <div className="text-gray-300 mt-5">→</div>
+          )}
+          {showEndInput && (
+            <div className="flex-1">
+              <label className="text-xs text-gray-400 block mb-1">깬 시간</label>
+              <input
+                type="time"
+                value={sleepEnd ?? ''}
+                onChange={e => handleEndChange(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-300"
+              />
+            </div>
+          )}
           {saving && (
             <span className="text-xs text-gray-300 mt-5">저장 중...</span>
           )}
