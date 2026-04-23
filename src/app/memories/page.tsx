@@ -1,190 +1,103 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProfile } from '@/hooks/useProfile'
-import { ActivityLog } from '@/lib/supabase/types'
+import { ActivityLog, ActivityCategory } from '@/lib/supabase/types'
+import { MonthCalendar } from '@/components/memories/MonthCalendar'
+import { DayDetailView } from '@/components/memories/DayDetailView'
 
-function formatDate(d: string): string {
-  const [y, m, day] = d.split('-')
-  return `${y}년 ${Number(m)}월 ${Number(day)}일`
-}
+type CategoryCounts = Partial<Record<ActivityCategory, number>>
 
-function RatingBadge({ rating }: { rating: number }) {
-  if (rating === 1) {
-    return (
-      <span className="shrink-0" aria-label="좋았어요">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1.5" />
-          <path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="white" strokeWidth="1.5" fill="none" />
-          <circle cx="9" cy="9.5" r="1" fill="white" />
-          <circle cx="15" cy="9.5" r="1" fill="white" />
-        </svg>
-      </span>
-    )
+function getToday() {
+  const d = new Date()
+  return {
+    year: d.getFullYear(),
+    month: d.getMonth() + 1,
+    dateStr: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
   }
-  if (rating === -1) {
-    return (
-      <span className="shrink-0" aria-label="별로였어요">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" fill="#6b7280" stroke="#6b7280" strokeWidth="1.5" />
-          <path d="M8 16s1.5-2 4-2 4 2 4 2" stroke="white" strokeWidth="1.5" fill="none" />
-          <circle cx="9" cy="9.5" r="1" fill="white" />
-          <circle cx="15" cy="9.5" r="1" fill="white" />
-        </svg>
-      </span>
-    )
-  }
-  return null
-}
-
-interface LogCardProps {
-  log: ActivityLog
-  profileId: string
-  onUpdate: (next: ActivityLog) => void
-  onDelete: (id: string) => void
-}
-
-function LogCard({ log, profileId, onUpdate, onDelete }: LogCardProps) {
-  const [note, setNote] = useState(log.note ?? '')
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [deleting, setDeleting] = useState(false)
-
-  useEffect(() => {
-    setNote(log.note ?? '')
-  }, [log.note])
-
-  function onNoteChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    const value = e.target.value
-    setNote(value)
-    if (saveTimer.current) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(async () => {
-      const res = await fetch('/api/activity-logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profileId,
-          logDate: log.log_date,
-          windowIndex: log.window_index,
-          activityName: log.activity_name,
-          activityDuration: log.activity_duration,
-          activityEffect: log.activity_effect,
-          did: log.did,
-          rating: log.rating,
-          note: value.trim() || null,
-          category: log.category ?? 'other',
-        }),
-      })
-      const data = await res.json()
-      if (res.ok && data.log) onUpdate(data.log as ActivityLog)
-    }, 600)
-  }
-
-  async function handleDelete() {
-    if (!confirm('이 기록을 삭제할까요?')) return
-    setDeleting(true)
-    try {
-      const res = await fetch(`/api/activity-logs?id=${log.id}`, { method: 'DELETE' })
-      if (res.ok) onDelete(log.id)
-    } finally {
-      setDeleting(false)
-    }
-  }
-
-  return (
-    <article className="bg-white rounded-2xl p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold">{log.activity_name}</span>
-            {log.activity_duration && (
-              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                {log.activity_duration}
-              </span>
-            )}
-            <span className="text-xs text-gray-400">
-              깨시{log.window_index + 1}
-            </span>
-          </div>
-          {log.activity_effect && (
-            <p className="text-xs text-gray-400 mt-0.5">{log.activity_effect}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <RatingBadge rating={log.rating} />
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleting}
-            aria-label="기록 삭제"
-            className="text-gray-300 hover:text-red-400 disabled:opacity-40 p-1"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-              <path d="M10 11v6M14 11v6" />
-              <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-            </svg>
-          </button>
-        </div>
-      </div>
-      <textarea
-        value={note}
-        onChange={onNoteChange}
-        placeholder="메모 — 어땠어요?"
-        rows={note ? 2 : 1}
-        className="mt-2 w-full text-sm bg-amber-50/50 border border-transparent rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-300 focus:bg-white resize-none placeholder:text-gray-300 whitespace-pre-wrap"
-      />
-    </article>
-  )
 }
 
 export default function MemoriesPage() {
   const router = useRouter()
   const { profile, loading: profileLoading } = useProfile()
-  const [logs, setLogs] = useState<ActivityLog[]>([])
-  const [loading, setLoading] = useState(true)
 
+  const today = useMemo(() => getToday(), [])
+
+  const [calYear, setCalYear] = useState(today.year)
+  const [calMonth, setCalMonth] = useState(today.month)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [dayCategoryData, setDayCategoryData] = useState<Record<string, CategoryCounts>>({})
+  const [dayLogs, setDayLogs] = useState<ActivityLog[]>([])
+  const [loadingCounts, setLoadingCounts] = useState(false)
+  const [loadingDay, setLoadingDay] = useState(false)
+
+  // 월간 카테고리 카운트 로드
   useEffect(() => {
     if (!profile) return
     let cancelled = false
-    async function fetchLogs() {
-      setLoading(true)
+    async function load() {
+      setLoadingCounts(true)
       try {
-        const res = await fetch(`/api/activity-logs?profileId=${profile!.id}&limit=300`)
-        if (!res.ok) return
-        const data = await res.json()
-        if (cancelled) return
-        const done = (data.logs as ActivityLog[]).filter(
-          l => l.did || (l.note ?? '').trim().length > 0 || l.rating !== 0
+        const monthStr = `${calYear}-${String(calMonth).padStart(2, '0')}`
+        const res = await fetch(
+          `/api/activity-logs?profileId=${profile!.id}&month=${monthStr}`
         )
-        setLogs(done)
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (!cancelled) setDayCategoryData(data.dayCategoryData ?? {})
+      } catch {
+        // 실패 시 빈 맵
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setLoadingCounts(false)
       }
     }
-    fetchLogs()
-    return () => {
-      cancelled = true
+    load()
+    return () => { cancelled = true }
+  }, [profile, calYear, calMonth])
+
+  // 선택 날짜 로그 로드
+  useEffect(() => {
+    if (!profile || !selectedDate) return
+    let cancelled = false
+    async function load() {
+      setLoadingDay(true)
+      try {
+        const res = await fetch(
+          `/api/activity-logs?profileId=${profile!.id}&date=${selectedDate}`
+        )
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (!cancelled) {
+          const meaningful = (data.logs as ActivityLog[]).filter(
+            l => l.did || (l.note ?? '').trim().length > 0 || l.rating !== 0
+          )
+          setDayLogs(meaningful)
+        }
+      } catch {
+        // 실패 시 빈 배열
+      } finally {
+        if (!cancelled) setLoadingDay(false)
+      }
     }
-  }, [profile])
+    load()
+    return () => { cancelled = true }
+  }, [profile, selectedDate])
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, ActivityLog[]>()
-    for (const log of logs) {
-      const list = map.get(log.log_date) ?? []
-      list.push(log)
-      map.set(log.log_date, list)
-    }
-    return Array.from(map.entries()).sort(([a], [b]) => (a < b ? 1 : -1))
-  }, [logs])
+  const handleChangeMonth = useCallback((year: number, month: number) => {
+    setCalYear(year)
+    setCalMonth(month)
+    setSelectedDate(null)
+    setDayLogs([])
+  }, [])
 
-  function handleUpdate(next: ActivityLog) {
-    setLogs(prev => prev.map(l => (l.id === next.id ? next : l)))
-  }
+  const handleSelectDate = useCallback((date: string) => {
+    setSelectedDate(prev => prev === date ? null : date)
+  }, [])
 
-  function handleDelete(id: string) {
-    setLogs(prev => prev.filter(l => l.id !== id))
-  }
+  const handleCloseDay = useCallback(() => {
+    setSelectedDate(null)
+    setDayLogs([])
+  }, [])
 
   if (profileLoading) {
     return (
@@ -199,53 +112,67 @@ export default function MemoriesPage() {
     return null
   }
 
+  const monthTotal = Object.values(dayCategoryData).reduce(
+    (sum, cats) => sum + Object.values(cats).reduce((s, c) => s + (c ?? 0), 0),
+    0
+  )
+  const activeDays = Object.keys(dayCategoryData).length
+
   return (
     <main className="min-h-screen p-6 pb-24">
-      <div className="mb-6">
+      <div className="mb-4">
         <h1 className="text-xl font-bold">추억</h1>
         <p className="text-sm text-gray-500">
           {profile.baby_name}와(과) 함께한 활동들
         </p>
       </div>
 
-      {loading && (
-        <div className="flex flex-col gap-3">
-          {[1, 2, 3].map(i => (
+      {!loadingCounts && monthTotal > 0 && (
+        <p className="text-xs text-gray-400 mb-3">
+          {calMonth}월: {activeDays}일간 {monthTotal}개 활동 기록
+        </p>
+      )}
+
+      <MonthCalendar
+        year={calYear}
+        month={calMonth}
+        selectedDate={selectedDate}
+        dayCategoryData={dayCategoryData}
+        onSelectDate={handleSelectDate}
+        onChangeMonth={handleChangeMonth}
+      />
+
+      {selectedDate && loadingDay && (
+        <div className="mt-4 flex flex-col gap-3">
+          {[1, 2].map(i => (
             <div key={i} className="h-24 bg-white rounded-2xl animate-pulse" />
           ))}
         </div>
       )}
 
-      {!loading && grouped.length === 0 && (
-        <div className="bg-white rounded-2xl p-8 text-center">
+      {selectedDate && !loadingDay && (
+        <DayDetailView
+          date={selectedDate}
+          logs={dayLogs}
+          onClose={handleCloseDay}
+        />
+      )}
+
+      {!selectedDate && !loadingCounts && monthTotal === 0 && (
+        <div className="mt-6 bg-white rounded-2xl p-8 text-center">
           <p className="text-gray-400 text-sm">
-            아직 기록된 활동이 없어요.
+            {calMonth}월에는 아직 기록된 활동이 없어요.
             <br />
             오늘 활동에 체크해보세요!
           </p>
         </div>
       )}
 
-      <div className="flex flex-col gap-6">
-        {grouped.map(([date, dayLogs]) => (
-          <section key={date}>
-            <h2 className="text-sm font-semibold text-amber-500 mb-2">
-              {formatDate(date)}
-            </h2>
-            <div className="flex flex-col gap-2">
-              {dayLogs.map(log => (
-                <LogCard
-                  key={log.id}
-                  log={log}
-                  profileId={profile.id}
-                  onUpdate={handleUpdate}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+      {!selectedDate && monthTotal > 0 && (
+        <p className="mt-6 text-center text-xs text-gray-300">
+          날짜를 눌러서 그날의 활동을 확인하세요
+        </p>
+      )}
     </main>
   )
 }
