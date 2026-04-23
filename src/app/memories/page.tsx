@@ -31,6 +31,11 @@ export default function MemoriesPage() {
   const [loadingCounts, setLoadingCounts] = useState(false)
   const [loadingDay, setLoadingDay] = useState(false)
 
+  // 임시: 카테고리 재분류 상태
+  const [migrating, setMigrating] = useState(false)
+  const [migrateResult, setMigrateResult] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+
   // 월간 카테고리 카운트 로드
   useEffect(() => {
     if (!profile) return
@@ -53,7 +58,7 @@ export default function MemoriesPage() {
     }
     load()
     return () => { cancelled = true }
-  }, [profile, calYear, calMonth])
+  }, [profile, calYear, calMonth, reloadKey])
 
   // 선택 날짜 로그 로드
   useEffect(() => {
@@ -81,7 +86,7 @@ export default function MemoriesPage() {
     }
     load()
     return () => { cancelled = true }
-  }, [profile, selectedDate])
+  }, [profile, selectedDate, reloadKey])
 
   const handleChangeMonth = useCallback((year: number, month: number) => {
     setCalYear(year)
@@ -98,6 +103,27 @@ export default function MemoriesPage() {
     setSelectedDate(null)
     setDayLogs([])
   }, [])
+
+  // 임시: 카테고리 재분류 실행
+  async function handleMigrate() {
+    setMigrating(true)
+    setMigrateResult(null)
+    try {
+      const res = await fetch('/api/migrate-categories', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        setMigrateResult(`${data.updated}개 활동 분류 완료! (태그 ${data.tagsUpdated}개)`)
+        // 달력 새로고침
+        setReloadKey(prev => prev + 1)
+      } else {
+        setMigrateResult(`오류: ${data.error}`)
+      }
+    } catch {
+      setMigrateResult('네트워크 오류가 발생했어요')
+    } finally {
+      setMigrating(false)
+    }
+  }
 
   if (profileLoading) {
     return (
@@ -125,6 +151,22 @@ export default function MemoriesPage() {
         <p className="text-sm text-gray-500">
           {profile.baby_name}와(과) 함께한 활동들
         </p>
+      </div>
+
+      {/* 임시: 카테고리 재분류 버튼 — 작업 완료 후 이 블록 삭제 */}
+      <div className="mb-4">
+        <button
+          onClick={handleMigrate}
+          disabled={migrating}
+          className="w-full bg-amber-400 hover:bg-amber-500 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-wait"
+        >
+          {migrating ? '분류 중... (잠시 기다려주세요)' : '🔄 과거 활동 카테고리 분류하기'}
+        </button>
+        {migrateResult && (
+          <p className={`mt-2 text-sm ${migrateResult.startsWith('오류') ? 'text-red-500' : 'text-green-600'} bg-white rounded-lg px-3 py-2`}>
+            {migrateResult}
+          </p>
+        )}
       </div>
 
       {!loadingCounts && monthTotal > 0 && (

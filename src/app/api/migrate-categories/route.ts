@@ -35,7 +35,6 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // category가 'other'이거나 null인 로그 조회
     const { data: logs, error } = await supabase
       .from('activity_logs')
       .select('id, activity_name, category')
@@ -44,20 +43,16 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error
     if (!logs || logs.length === 0) {
-      return NextResponse.json({ message: 'No logs to migrate', updated: 0 })
+      return NextResponse.json({ message: '분류할 활동이 없어요', updated: 0 })
     }
 
-    // 같은 이름은 한 번만 분류 (캐싱)
     const nameCache = new Map<string, string>()
     let updated = 0
     let skipped = 0
 
     for (const log of logs) {
       const name = log.activity_name
-      if (!name) continue
-
-      // 고정 루틴(📌)은 other 유지
-      if (name.startsWith('📌')) {
+      if (!name || name.startsWith('📌')) {
         skipped++
         continue
       }
@@ -73,21 +68,19 @@ export async function POST(req: NextRequest) {
           .from('activity_logs')
           .update({ category })
           .eq('id', log.id)
-
         if (!updateError) updated++
       } else {
         skipped++
       }
     }
 
-    // custom_activity_tags도 재분류
-    const { data: tags, error: tagError } = await supabase
+    const { data: tags } = await supabase
       .from('custom_activity_tags')
       .select('id, label, category')
       .or('category.eq.other,category.is.null')
 
     let tagsUpdated = 0
-    if (!tagError && tags) {
+    if (tags) {
       for (const tag of tags) {
         let category = nameCache.get(tag.label)
         if (!category) {
@@ -95,27 +88,25 @@ export async function POST(req: NextRequest) {
           nameCache.set(tag.label, category)
         }
         if (category !== 'other') {
-          const { error: updateError } = await supabase
+          const { error: ue } = await supabase
             .from('custom_activity_tags')
             .update({ category })
             .eq('id', tag.id)
-          if (!updateError) tagsUpdated++
+          if (!ue) tagsUpdated++
         }
       }
     }
 
     return NextResponse.json({
-      message: 'Migration complete',
+      message: `${updated}개 활동 분류 완료!`,
       totalLogs: logs.length,
       updated,
       skipped,
-      uniqueNames: nameCache.size,
-      classifications: Object.fromEntries(nameCache),
       tagsUpdated,
+      classifications: Object.fromEntries(nameCache),
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    console.error('Category migration error:', message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
