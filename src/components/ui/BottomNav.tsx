@@ -20,12 +20,12 @@ export function BottomNav() {
         오늘
       </Link>
       <Link
-        href="/week"
+        href="/memories"
         className={`flex-1 py-4 text-center text-sm font-medium ${
-          path === '/week' ? 'text-amber-500' : 'text-gray-400'
+          path === '/memories' ? 'text-amber-500' : 'text-gray-400'
         }`}
       >
-        이번 주
+        추억
       </Link>
       <Link
         href="/settings"
