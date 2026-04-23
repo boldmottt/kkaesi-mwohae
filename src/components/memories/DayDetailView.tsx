@@ -197,29 +197,29 @@ export function DayDetailView({ date, logs, onClose }: Props) {
   )
 
   return (
-    <div className="min-h-screen bg-[#FFF8F0]">
+    <div className="min-h-screen bg-[#FFF8F0] dark:bg-gray-900 dark:text-white">
       {/* 상단 바 */}
-      <div className="sticky top-0 bg-[#FFF8F0] z-10 px-6 pt-4 pb-2 border-b border-amber-100">
+      <div className="sticky top-0 bg-[#FFF8F0] dark:bg-gray-900 z-10 px-6 pt-4 pb-2 border-b border-amber-100 dark:border-gray-700">
         {backButton}
       </div>
 
       <div className="px-6 pb-8">
         {/* 날짜 헤더 */}
         <div className="py-4">
-          <h2 className="text-xl font-bold text-amber-700">
+          <h2 className="text-xl font-bold text-amber-700 dark:text-amber-400">
             {formatDateHeader(date)}
           </h2>
         </div>
 
         {/* AI 요약 자리 (Phase 3에서 채울 예정) */}
-        <div className="mb-4 p-3 bg-white/60 rounded-xl border border-dashed border-gray-200">
-          <p className="text-xs text-gray-400">AI 한줄 요약이 들어갈 자리예요</p>
+        <div className="mb-4 p-3 bg-white/60 dark:bg-gray-800/60 rounded-xl border border-dashed border-gray-200 dark:border-gray-600">
+          <p className="text-xs text-gray-400 dark:text-gray-300">AI 한줄 요약이 들어갈 자리예요</p>
         </div>
 
         {/* 타임라인 */}
         {windowGroups.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-400 text-sm">이 날은 기록된 활동이 없어요</p>
+            <p className="text-gray-400 dark:text-gray-300 text-sm">이 날은 기록된 활동이 없어요</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -232,15 +232,15 @@ export function DayDetailView({ date, logs, onClose }: Props) {
                 return (
                   <div key={windowIndex} className="relative mb-4 last:mb-0">
                     {/* 타임라인 도트 */}
-                    <div className="absolute -left-[30px] top-2 w-3 h-3 bg-amber-400 rounded-full" />
+                    <div className="absolute -left-[30px] top-2 w-3 h-3 bg-amber-400 dark:bg-amber-500 rounded-full" />
 
                     {/* 시간대 라벨 */}
-                    <div className="text-xs text-amber-500 font-semibold mb-2">
+                    <div className="text-xs text-amber-500 dark:text-amber-400 font-semibold mb-2">
                       {windowIndex + 1}번째 깨시 시간
                     </div>
 
                     {wLogs.length === 0 ? (
-                      <div className="text-sm text-gray-400 italic py-2">
+                      <div className="text-sm text-gray-400 dark:text-gray-300 italic py-2">
                         이 시간대에는 기록이 없어요
                       </div>
                     ) : (
@@ -248,7 +248,7 @@ export function DayDetailView({ date, logs, onClose }: Props) {
                         {wLogs.map(log => {
                           const cat = (log.category as ActivityCategory) ?? 'other'
                           return (
-                            <div key={log.id} className="bg-white rounded-xl p-3 shadow-sm">
+                            <div key={log.id} className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm">
                               <div className="flex items-start gap-2">
                                 {/* 카테고리 컬러 보더 */}
                                 <div className="w-1 rounded-full shrink-0" style={{ backgroundColor: CATEGORY_HEX[cat] }} />
@@ -260,7 +260,7 @@ export function DayDetailView({ date, logs, onClose }: Props) {
                                     </span>
                                     <RatingIcon rating={log.rating} />
                                     {log.activity_duration && (
-                                      <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                                      <span className="text-xs text-gray-400 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
                                         {log.activity_duration}
                                       </span>
                                     )}
@@ -271,7 +271,7 @@ export function DayDetailView({ date, logs, onClose }: Props) {
 
                                   {/* 메모 박스 */}
                                   {log.note && log.note.trim() && (
-                                    <div className="mt-1.5 text-xs bg-[#FFF0E8] rounded-lg px-3 py-1.5 text-gray-600 whitespace-pre-wrap">
+                                    <div className="mt-1.5 text-xs bg-[#FFF0E8] dark:bg-gray-700 rounded-lg px-3 py-1.5 text-gray-600 dark:text-gray-200 whitespace-pre-wrap">
                                       {log.note}
                                     </div>
                                   )}
@@ -285,7 +285,7 @@ export function DayDetailView({ date, logs, onClose }: Props) {
 
                     {/* 시간대 통계 */}
                     {wLogs.length > 0 && (
-                      <div className="text-xs text-gray-400 mt-1.5">
+                      <div className="text-xs text-gray-400 dark:text-gray-300 mt-1.5">
                         활동 {wCount}개 · 총 {wMinutes}분
                       </div>
                     )}
@@ -298,8 +298,8 @@ export function DayDetailView({ date, logs, onClose }: Props) {
 
         {/* 일일 통계 */}
         {totalActivities > 0 && (
-          <div className="mt-6 p-4 bg-white rounded-2xl shadow-sm">
-            <h3 className="text-sm font-semibold text-amber-600 mb-3">오늘 하루</h3>
+          <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
+            <h3 className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-3">오늘 하루</h3>
 
             {/* 점묘화 원형 */}
             <div className="flex justify-center mb-3">
@@ -314,7 +314,7 @@ export function DayDetailView({ date, logs, onClose }: Props) {
                 return (
                   <div key={cat} className="flex items-center gap-1">
                     <span style={{ backgroundColor: CATEGORY_HEX[cat] }} className="w-2 h-2 rounded-full" />
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-gray-600 dark:text-gray-300">
                       {CATEGORY_SHORT[cat]} {count}
                     </span>
                   </div>
@@ -323,7 +323,7 @@ export function DayDetailView({ date, logs, onClose }: Props) {
             </div>
 
             {/* 수치 요약 */}
-            <div className="text-center text-sm text-gray-500">
+            <div className="text-center text-sm text-gray-500 dark:text-gray-300">
               활동 {totalActivities}개 · 총 {totalMinutes}분
             </div>
           </div>
