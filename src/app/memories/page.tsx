@@ -10,24 +10,31 @@ function formatDate(d: string): string {
 }
 
 function RatingBadge({ rating }: { rating: number }) {
-  if (rating === 0) return null
   if (rating === 1) {
     return (
-      <span className="text-amber-500 shrink-0" aria-label="좋았어요">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      <span className="shrink-0" aria-label="좋았어요">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1.5" />
+          <path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="white" strokeWidth="1.5" fill="none" />
+          <circle cx="9" cy="9.5" r="1" fill="white" />
+          <circle cx="15" cy="9.5" r="1" fill="white" />
         </svg>
       </span>
     )
   }
-  return (
-    <span className="text-gray-400 shrink-0" aria-label="별로였어요">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="6" y1="6" x2="18" y2="18" />
-        <line x1="18" y1="6" x2="6" y2="18" />
-      </svg>
-    </span>
-  )
+  if (rating === -1) {
+    return (
+      <span className="shrink-0" aria-label="별로였어요">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" fill="#6b7280" stroke="#6b7280" strokeWidth="1.5" />
+          <path d="M8 16s1.5-2 4-2 4 2 4 2" stroke="white" strokeWidth="1.5" fill="none" />
+          <circle cx="9" cy="9.5" r="1" fill="white" />
+          <circle cx="15" cy="9.5" r="1" fill="white" />
+        </svg>
+      </span>
+    )
+  }
+  return null
 }
 
 interface LogCardProps {
@@ -64,6 +71,7 @@ function LogCard({ log, profileId, onUpdate, onDelete }: LogCardProps) {
           did: log.did,
           rating: log.rating,
           note: value.trim() || null,
+          category: log.category ?? 'other',
         }),
       })
       const data = await res.json()
