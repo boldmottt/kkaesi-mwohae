@@ -11,10 +11,18 @@ export default function SettingsPage() {
   const router = useRouter()
   const { profile } = useProfile()
   const { wakeWindows } = useWakeWindows(profile?.id)
-  const [windows, setWindows] = useState<WakeWindowDraft[]>([])
-  const [inviteUrl, setInviteUrl] = useState<string | null>(null)
+  const [windows, setWindows] = useState([])
+  const [inviteUrl, setInviteUrl] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
+
+  // 마이그레이션 상태
+  const [migrating, setMigrating] = useState(false)
+  const [migrateResult, setMigrateResult] = useState(null)
+
+  // 캐시 초기화 상태
+  const [clearingCache, setClearingCache] = useState(false)
+  const [cacheResult, setCacheResult] = useState(null)
 
   useEffect(() => {
     if (wakeWindows.length > 0) {
@@ -63,6 +71,45 @@ export default function SettingsPage() {
     } catch {}
   }
 
+  async function handleMigrate() {
+    setMigrating(true)
+    setMigrateResult(null)
+    try {
+      const res = await fetch('/api/migrate-categories', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        setMigrateResult(`${data.updated}개 활동 분류 완료! (태그 ${data.tagsUpdated ?? 0}개)`)
+      } else {
+        setMigrateResult(`오류: ${data.error}`)
+      }
+    } catch {
+      setMigrateResult('네트워크 오류가 발생했어요')
+    } finally {
+      setMigrating(false)
+    }
+  }
+
+  async function handleClearCache() {
+    if (!profile) return
+    setClearingCache(true)
+    setCacheResult(null)
+    try {
+      const res = await fetch(`/api/activity-cache?profileId=${profile.id}`, {
+        method: 'DELETE',
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setCacheResult('캐시가 초기화됐어요!')
+      } else {
+        setCacheResult(`오류: ${data.error}`)
+      }
+    } catch {
+      setCacheResult('네트워크 오류가 발생했어요')
+    } finally {
+      setClearingCache(false)
+    }
+  }
+
   async function handleLogout() {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -71,80 +118,101 @@ export default function SettingsPage() {
 
   if (windows.length === 0 && wakeWindows.length === 0) {
     return (
-      <main className="min-h-screen p-6">
-        <p className="text-gray-400 text-sm">불러오는 중...</p>
-      </main>
+      <div className="min-h-screen bg-amber-50 p-6">
+        <p>불러오는 중...</p>
+      </div>
     )
   }
 
   return (
-    <main className="min-h-screen p-6 pb-10">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold">설정</h1>
-        <button onClick={() => router.push('/')} className="text-gray-400 text-sm">
-          닫기
+    <div className="min-h-screen bg-amber-50 p-6">
+      <div className="max-w-lg mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-amber-900">설정</h1>
+          <button onClick={() => router.push('/')} className="text-gray-400 text-sm">
+            닫기
+          </button>
+        </div>
+
+        {profile && (
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <p className="text-gray-600">아기: {profile.baby_name}</p>
+          </div>
+        )}
+
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <h2 className="font-semibold text-amber-800 mb-3">깨시 설정</h2>
+
+          <button
+            onClick={handleSaveWindows}
+            disabled={saving}
+            className="w-full bg-amber-500 text-white py-2 rounded-lg"
+          >
+            {saving ? '저장 중...' : saveSuccess ? '저장됨 ✓' : '저장'}
+          </button>
+        </div>
+
+        <BabyTimeImport />
+
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <h2 className="font-semibold text-amber-800 mb-3">배우자 공유</h2>
+          <p className="text-sm text-gray-600 mb-3">
+            초대 링크를 공유하면 배우자도 같은 깨시 스케줄을 볼 수 있어요.
+          </p>
+
+          <button
+            onClick={handleCreateInvite}
+            className="w-full bg-amber-500 text-white py-2 rounded-lg"
+          >
+            초대 링크 생성 + 복사
+          </button>
+
+          {inviteUrl && (
+            <p className="text-green-600 text-sm mt-2">링크가 클립보드에 복사됐어요!</p>
+          )}
+        </div>
+
+        {/* 관리 도구 */}
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <h2 className="font-semibold text-amber-800 mb-3">관리 도구</h2>
+
+          {/* 카테고리 재분류 */}
+          <div className="mb-4">
+            <button
+              onClick={handleMigrate}
+              disabled={migrating}
+              className="w-full bg-purple-500 text-white py-2 rounded-lg"
+            >
+              {migrating ? '분류 중... (잠시 기다려주세요)' : '활동 카테고리 재분류'}
+            </button>
+            {migrateResult && (
+              <p className={`text-sm mt-2 ${migrateResult.startsWith('오류') ? 'text-red-500' : 'text-green-600'}`}>
+                {migrateResult}
+              </p>
+            )}
+          </div>
+
+          {/* 캐시 초기화 */}
+          <div>
+            <button
+              onClick={handleClearCache}
+              disabled={clearingCache || !profile}
+              className="w-full bg-blue-500 text-white py-2 rounded-lg"
+            >
+              {clearingCache ? '초기화 중...' : '활동 추천 캐시 초기화'}
+            </button>
+            {cacheResult && (
+              <p className={`text-sm mt-2 ${cacheResult.startsWith('오류') ? 'text-red-500' : 'text-green-600'}`}>
+                {cacheResult}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <button onClick={handleLogout} className="w-full bg-gray-300 text-gray-700 py-2 rounded-lg">
+          로그아웃
         </button>
       </div>
-
-      {profile && (
-        <div className="bg-white rounded-xl p-4 mb-6">
-          <p className="text-sm text-gray-500 mb-1">아기</p>
-          <p className="font-semibold">{profile.baby_name}</p>
-        </div>
-      )}
-
-      <section className="mb-8">
-        <h2 className="font-semibold mb-3">깨시 설정</h2>
-        <WakeWindowSettings value={windows} onChange={setWindows} />
-        <button
-          onClick={handleSaveWindows}
-          disabled={saving}
-          className="mt-4 w-full bg-amber-400 text-white rounded-xl py-3 font-semibold disabled:opacity-60"
-        >
-          {saving ? '저장 중...' : saveSuccess ? '저장됨 ✓' : '저장'}
-        </button>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="font-semibold mb-3">BabyTime 가져오기</h2>
-        <p className="text-sm text-gray-500 mb-3">
-          BabyTime 내보내기 파일(CSV)로 깨시 설정을 자동으로 채울 수 있어요.
-        </p>
-        <BabyTimeImport onSuggestion={(count) => {
-          const defaults: Record<number, number[]> = {
-            1: [180],
-            2: [90, 180],
-            3: [30, 90, 180],
-            4: [30, 60, 90, 120],
-            5: [30, 45, 60, 90, 120],
-          }
-          const durations = defaults[count] ?? Array(count).fill(90)
-          setWindows(durations.map(d => ({ duration_minutes: d, start_time: '', routines: '' })))
-        }} />
-      </section>
-
-      <section className="mb-8">
-        <h2 className="font-semibold mb-3">배우자 공유</h2>
-        <p className="text-sm text-gray-500 mb-3">
-          초대 링크를 공유하면 배우자도 같은 깨시 스케줄을 볼 수 있어요.
-        </p>
-        <button
-          onClick={handleCreateInvite}
-          className="w-full border border-amber-400 text-amber-500 rounded-xl py-3 font-semibold"
-        >
-          초대 링크 생성 + 복사
-        </button>
-        {inviteUrl && (
-          <p className="text-xs text-green-600 mt-2">링크가 클립보드에 복사됐어요!</p>
-        )}
-      </section>
-
-      <button
-        onClick={handleLogout}
-        className="text-gray-400 text-sm w-full text-center py-2"
-      >
-        로그아웃
-      </button>
-    </main>
+    </div>
   )
 }

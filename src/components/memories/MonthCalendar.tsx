@@ -19,20 +19,22 @@ interface Props {
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
 
-const CATEGORY_HEX: Record<ActivityCategory, string> = {
+const CATEGORY_HEX: Record<string, string> = {
   physical: '#fb923c',
   sensory: '#a855f7',
   language: '#60a5fa',
   cognitive: '#4ade80',
   emotional: '#f472b6',
+  other: '#9ca3af',
 }
 
-const CATEGORY_SHORT: Record<ActivityCategory, string> = {
+const CATEGORY_SHORT: Record<string, string> = {
   physical: '체',
   sensory: '감',
   language: '어',
   cognitive: '지',
   emotional: '정',
+  other: '기타',
 }
 
 function getTodayString(): string {
@@ -312,9 +314,9 @@ export function MonthCalendar({
         })}
       </div>
 
-      {/* 범례 — 최소화 */}
+      {/* 범례 — other 포함 */}
       <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-        {(['physical', 'sensory', 'language', 'cognitive', 'emotional'] as ActivityCategory[]).map(cat => (
+        {(['physical', 'sensory', 'language', 'cognitive', 'emotional', 'other'] as string[]).map(cat => (
           <div key={cat} className="flex items-center gap-0.5">
             <span style={{ backgroundColor: CATEGORY_HEX[cat] }} className="w-1.5 h-1.5 rounded-full inline-block" />
             <span className="text-[9px] text-gray-500">{CATEGORY_SHORT[cat]}</span>
