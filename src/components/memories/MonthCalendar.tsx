@@ -2,13 +2,13 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { ActivityCategory } from '@/lib/supabase/types'
 
-type CategoryCounts = Partial<Record<ActivityCategory, number>>
+type CategoryCounts = Record<ActivityCategory | string, number>
 
 interface Props {
   year: number
   month: number
   selectedDate: string | null
-  dayCategoryData: Record<string, CategoryCounts> // { '2026-04-15': { physical: 3, sensory: 2 } }
+  dayCategoryData: Record<string, CategoryCounts>
   onSelectDate: (date: string) => void
   onChangeMonth: (year: number, month: number) => void
 }
@@ -21,7 +21,14 @@ const CATEGORY_HEX: Record<ActivityCategory, string> = {
   language: '#60a5fa',
   cognitive: '#4ade80',
   emotional: '#f472b6',
-  other: '#9ca3af',
+}
+
+const CATEGORY_SHORT: Record<ActivityCategory, string> = {
+  physical: '체',
+  sensory: '감',
+  language: '어',
+  cognitive: '지',
+  emotional: '정',
 }
 
 function getTodayString(): string {
@@ -29,32 +36,6 @@ function getTodayString(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-// 겹치지 않는 랜덤 좌표 생성
-function generateDotPositions(
-  totalDots: number,
-  width: number,
-  height: number,
-  dotRadius: number
-): { x: number; y: number }[] {
-  const positions: { x: number; y: number }[] = []
-  const margin = dotRadius + 0.5
-  const minDist = dotRadius * 2 + 1
-  let attempts = 0
-  const maxAttempts = totalDots * 50
-
-  while (positions.length < totalDots && attempts < maxAttempts) {
-    attempts++
-    const x = margin + Math.random() * (width - margin * 2)
-    const y = margin + Math.random() * (height - margin * 2)
-    const overlaps = positions.some(
-      p => Math.hypot(p.x - x, p.y - y) < minDist
-    )
-    if (!overlaps) positions.push({ x, y })
-  }
-  return positions
-}
-
-// 시드 기반 의사 난수 (같은 날짜 = 같은 패턴)
 function seededRandom(seed: number): () => number {
   let s = seed
   return () => {
@@ -78,13 +59,14 @@ function generateDotPositionsSeeded(
   const maxAttempts = totalDots * 50
 
   while (positions.length < totalDots && attempts < maxAttempts) {
-    attempts++
-    const x = margin + rand() * (width - margin * 2)
-    const y = margin + rand() * (height - margin * 2)
-    const overlaps = positions.some(
-      p => Math.hypot(p.x - x, p.y - y) < minDist
-    )
-    if (!overlaps) positions.push({ x, y })
+    const x = margin + rand() * (width - 2 * margin)
+    const y = margin + rand() * (height - 2 * margin)
+    const tooClose = positions.some(p => Math.hypot(p.x - x, p.y - y) < minDist)
+    if (!tooClose) {
+      positions.push({ x, y })
+    } else {
+      attempts++
+    }
   }
   return positions
 }
@@ -95,12 +77,16 @@ function dateSeed(dateStr: string): number {
     hash = ((hash << 5) - hash) + dateStr.charCodeAt(i)
     hash |= 0
   }
-  return Math.abs(hash) || 1
+  return Math.abs(hash)
 }
 
-function DotCanvas({ dateStr, categories }: { dateStr: string; categories: CategoryCounts }) {
+function ActivityDotCanvas({ dateStr, categories }: {
+  dateStr: string
+  categories: CategoryCounts | null
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
+  if (!categories) return null
   const totalActivities = Object.values(categories).reduce((s, c) => s + (c ?? 0), 0)
 
   useEffect(() => {
@@ -111,8 +97,8 @@ function DotCanvas({ dateStr, categories }: { dateStr: string; categories: Categ
     if (!ctx) return
 
     const dpr = window.devicePixelRatio || 1
-    const w = 28
-    const h = 22
+    const w = 24
+    const h = 16
     canvas.width = w * dpr
     canvas.height = h * dpr
     canvas.style.width = `${w}px`
@@ -120,28 +106,22 @@ function DotCanvas({ dateStr, categories }: { dateStr: string; categories: Categ
     ctx.scale(dpr, dpr)
     ctx.clearRect(0, 0, w, h)
 
-    // 총 점 개수: 활동 수 비례, 3~25개
-    const dotCount = Math.min(25, Math.max(3, Math.round(totalActivities * 1.5)))
-    const dotRadius = 2
+    const dotCount = Math.min(20, Math.max(3, Math.round(totalActivities * 1.2)))
+    const dotRadius = 1.5
 
     const positions = generateDotPositionsSeeded(dotCount, w, h, dotRadius, dateSeed(dateStr))
 
-    // 카테고리 비율에 따라 색상 배열 만들기
     const colorSlots: string[] = []
-    const entries = Object.entries(categories) as [ActivityCategory, number][]
+    const entries = Object.entries(categories) as [ActivityCategory | string, number][]
     for (const [cat, count] of entries) {
       const proportion = count / totalActivities
       const slots = Math.max(1, Math.round(proportion * dotCount))
       for (let i = 0; i < slots; i++) {
-        colorSlots.push(CATEGORY_HEX[cat] ?? CATEGORY_HEX.other)
+        colorSlots.push(CATEGORY_HEX[cat] ?? CATEGORY_HEX.physical)
       }
     }
-    // 길이 맞추기
-    while (colorSlots.length < positions.length) {
-      colorSlots.push(colorSlots[colorSlots.length - 1] ?? CATEGORY_HEX.other)
-    }
-    // 셔플 (시드 기반)
-    const rand = seededRandom(dateSeed(dateStr) + 7)
+
+    const rand = seededRandom(dateSeed(dateStr))
     for (let i = colorSlots.length - 1; i > 0; i--) {
       const j = Math.floor(rand() * (i + 1))
       ;[colorSlots[i], colorSlots[j]] = [colorSlots[j], colorSlots[i]]
@@ -150,7 +130,7 @@ function DotCanvas({ dateStr, categories }: { dateStr: string; categories: Categ
     positions.forEach((pos, idx) => {
       ctx.beginPath()
       ctx.arc(pos.x, pos.y, dotRadius, 0, Math.PI * 2)
-      ctx.fillStyle = colorSlots[idx] ?? CATEGORY_HEX.other
+      ctx.fillStyle = colorSlots[idx] ?? CATEGORY_HEX.physical
       ctx.fill()
     })
   }, [dateStr, categories, totalActivities])
@@ -158,11 +138,7 @@ function DotCanvas({ dateStr, categories }: { dateStr: string; categories: Categ
   if (totalActivities === 0) return null
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="mx-auto"
-      style={{ width: 28, height: 22 }}
-    />
+    <canvas ref={canvasRef} className="absolute bottom-0.5 left-1/2 -translate-x-1/2" />
   )
 }
 
@@ -182,27 +158,21 @@ export function MonthCalendar({
     const daysInMonth = new Date(year, month, 0).getDate()
 
     const cells: (string | null)[] = []
-    for (let i = 0; i < startDow; i++) cells.push(null)
+    for (let i = 0; i < startDow; i++) {
+      cells.push(null)
+    }
     for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-      cells.push(dateStr)
+      cells.push(`${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
     }
     return cells
   }, [year, month])
 
-  function handlePrevMonth() {
-    if (month === 1) onChangeMonth(year - 1, 12)
-    else onChangeMonth(year, month - 1)
-  }
-
-  function handleNextMonth() {
+  const isPastMonth = (() => {
     const todayDate = new Date()
-    const todayYear = todayDate.getFullYear()
-    const todayMonth = todayDate.getMonth() + 1
-    if (year > todayYear || (year === todayYear && month >= todayMonth)) return
-    if (month === 12) onChangeMonth(year + 1, 1)
-    else onChangeMonth(year, month + 1)
-  }
+    if (year < todayDate.getFullYear()) return true
+    if (year === todayDate.getFullYear() && month < todayDate.getMonth() + 1) return true
+    return false
+  })()
 
   const isFutureBlocked = (() => {
     const todayDate = new Date()
@@ -211,54 +181,58 @@ export function MonthCalendar({
   })()
 
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="mb-6">
+      {/* 헤더 — 감자꽃 폰트 */}
+      <div className="flex items-center justify-between mb-3">
         <button
-          type="button"
-          onClick={handlePrevMonth}
-          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+          onClick={() => {
+            if (isFutureBlocked) return
+            if (month === 1) onChangeMonth(year - 1, 12)
+            else onChangeMonth(year, month - 1)
+          }}
+          disabled={isFutureBlocked}
+          className="text-amber-500 hover:text-amber-600 disabled:opacity-30 p-1"
           aria-label="이전 달"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <span className="font-bold text-gray-700">
+
+        <h2 className="text-lg font-bold text-amber-600">
           {year}년 {month}월
-        </span>
+        </h2>
+
         <button
-          type="button"
-          onClick={handleNextMonth}
+          onClick={() => {
+            if (isFutureBlocked) return
+            if (month === 12) onChangeMonth(year + 1, 1)
+            else onChangeMonth(year, month + 1)
+          }}
           disabled={isFutureBlocked}
-          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 disabled:opacity-20 rounded-full hover:bg-gray-100 transition-colors"
+          className="text-amber-500 hover:text-amber-600 disabled:opacity-30 p-1"
           aria-label="다음 달"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>
       </div>
 
       {/* 요일 헤더 */}
-      <div className="grid grid-cols-7 mb-1">
+      <div className="grid grid-cols-7 gap-0 mb-1">
         {DAY_LABELS.map(day => (
-          <div
-            key={day}
-            className={`text-center text-xs font-medium py-1 ${
-              day === '일' ? 'text-red-300' : day === '토' ? 'text-blue-300' : 'text-gray-400'
-            }`}
-          >
+          <div key={day} className="text-center text-xs text-gray-400 py-1">
             {day}
           </div>
         ))}
       </div>
 
       {/* 날짜 그리드 */}
-      <div className="grid grid-cols-7 gap-y-0.5">
+      <div className="grid grid-cols-7 gap-0">
         {calendarDays.map((dateStr, idx) => {
           if (!dateStr) {
-            return <div key={`empty-${idx}`} className="h-14" />
+            return <div key={`empty-${idx}`} className="h-12" />
           }
 
           const dayNum = parseInt(dateStr.split('-')[2], 10)
@@ -276,60 +250,39 @@ export function MonthCalendar({
           return (
             <button
               key={dateStr}
-              type="button"
               onClick={() => !isFuture && onSelectDate(dateStr)}
               disabled={isFuture}
-              className={`h-14 flex flex-col items-center justify-start pt-1 rounded-lg transition-colors relative ${
+              className={`h-12 flex flex-col items-center justify-start pt-1 rounded-lg transition-colors relative ${
                 isSelected
-                  ? 'bg-amber-50 ring-2 ring-amber-400'
-                  : isToday
-                    ? 'bg-amber-50/50'
-                    : isFuture
-                      ? 'text-gray-200 cursor-default'
-                      : 'hover:bg-gray-50'
+                  ? 'bg-amber-50 ring-1 ring-amber-300'
+                  : isFuture
+                    ? 'text-gray-200 cursor-default'
+                    : 'hover:bg-gray-50'
               }`}
             >
-              <span
-                className={`text-xs leading-none mb-0.5 ${
-                  isSelected
-                    ? 'text-amber-600 font-bold'
-                    : isToday
-                      ? 'text-amber-500 font-bold'
-                      : isFuture
-                        ? 'text-gray-200'
-                        : dow === 0
-                          ? 'text-red-400'
-                          : dow === 6
-                            ? 'text-blue-400'
-                            : 'text-gray-600'
-                }`}
-              >
+              <span className={`text-sm ${isToday ? 'font-bold text-amber-600' : ''}`}>
                 {dayNum}
               </span>
+              {/* 오늘 표시: 작은 밑줄 */}
+              {isToday && (
+                <div className="w-3 h-0.5 bg-amber-400 rounded-full mt-0.5" />
+              )}
+              {/* 점묘화 */}
               {hasActivity && categories && (
-                <DotCanvas dateStr={dateStr} categories={categories} />
+                <ActivityDotCanvas dateStr={dateStr} categories={categories} />
               )}
             </button>
           )
         })}
       </div>
 
-      {/* 카테고리 범례 */}
-      <div className="flex gap-3 justify-center mt-3 pt-3 border-t border-gray-100">
+      {/* 범례 — 최소화 */}
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
         {(['physical', 'sensory', 'language', 'cognitive', 'emotional'] as ActivityCategory[]).map(cat => (
-          <span key={cat} className="flex items-center gap-1 text-[10px] text-gray-400">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: CATEGORY_HEX[cat] }}
-            />
-            {{
-              physical: '신체',
-              sensory: '감각',
-              language: '언어',
-              cognitive: '인지',
-              emotional: '정서',
-            }[cat]}
-          </span>
+          <div key={cat} className="flex items-center gap-0.5">
+            <span style={{ backgroundColor: CATEGORY_HEX[cat] }} className="w-1.5 h-1.5 rounded-full inline-block" />
+            <span className="text-[9px] text-gray-500">{CATEGORY_SHORT[cat]}</span>
+          </div>
         ))}
       </div>
     </div>
