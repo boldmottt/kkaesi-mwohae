@@ -1,56 +1,60 @@
 # 깨시뭐해 — 작업 현황
 
-**최종 업데이트:** 2026-04-18  
-**상태:** 구현 완료 / 배포 준비 중
+**최종 업데이트:** 2026-04-23  
+**상태:** 운영 중 / 기능 개선 진행 중
 
 ---
 
-## 완료된 작업 (18 커밋)
+## 완료된 기능
 
-| 커밋 | 내용 |
-|------|------|
-| ddd6221 | fix: pre-deploy 보안 + 버그 수정 |
-| e3adafe | chore: Vercel 배포 설정 + 배포 가이드 |
-| a2fecd3 | feat: 하단 네비게이션 + 전체 통합 완료 |
-| 184fd79 | feat: BabyTime 파일 가져오기 (TDD) |
-| b7d17ac | feat: 설정 화면 + 배우자 초대 링크 |
-| 5998cdb | feat: 주간 뷰 (6일 날짜 탭 + 깨시 카드) |
-| d64b296 | feat: 오늘 화면 메인 (깨시 카드 + 인증 가드) |
-| 0185693 | feat: AI 대화 기능 (질문/조건변경 + 활동 재추천) |
-| 3bb7180 | feat: 깨시 카드 컴포넌트 (TDD) |
-| 1ed102d | feat: Claude API 활동 추천 (캐싱 포함) |
-| c4fb619 | feat: 온보딩 프로필 + 깨시 설정 |
-| c222a06 | feat: Supabase magic link 인증 |
-
----
-
-## 구현된 기능
-
+### 핵심 기능
 - [x] Magic link 이메일 인증 (Supabase Auth)
 - [x] 온보딩: 아기 프로필 + 깨시 설정
-- [x] 오늘 화면: 깨시별 활동 추천 카드
-- [x] AI 대화: 질문 답변 + 조건 변경 시 활동 재추천
+- [x] 오늘 화면: 깨시별 AI 활동 추천 카드
+- [x] AI 대화 (ChatBox): 질문 답변 + 조건 변경 시 활동 재추천
 - [x] 활동 캐싱 (같은 날/깨시 재호출 방지)
-- [x] 주간 뷰: 향후 6일 날짜 탭 + 깨시 카드
 - [x] 설정 화면: 깨시 수/시간 편집 + 저장
 - [x] 배우자 초대 링크 생성 + 클립보드 복사
 - [x] BabyTime CSV 가져오기 (깨시 수 자동 제안)
-- [x] 하단 네비게이션 (오늘/주간/설정)
-- [x] pre-deploy 보안 + 버그 수정
+- [x] 하단 네비게이션 (오늘/추억/설정)
 
----
+### 활동 피드백 시스템
+- [x] 활동 완료 체크 (did toggle)
+- [x] 3단계 표정 피드백 (😊좋아함 / 😐보통 / 😟싫어함)
+- [x] 활동 메모 (600ms 디바운스 자동 저장)
+- [x] 활동 시간 수정 (+1분/+5분/+30분 버튼, 0분 초기화)
+- [x] 커스텀 활동 추가 (사용자 태그 + AI 카테고리 분류)
 
-## 테스트 현황
+### 활동 카테고리 라벨링
+- [x] AI 추천 활동에 category 자동 부여 (physical/sensory/language/cognitive/emotional/other)
+- [x] 커스텀 활동 AI 자동 분류 (/api/classify-activity)
+- [x] activity_logs, custom_activity_tags에 category 컬럼
 
-**20 tests passing / 5 suites**
+### 수면 카드
+- [x] 깨시 사이 수면 카드 (간밤수면/낮잠/취침 3종)
+- [x] 수면 시간 입력 → 깨시 start_time 자동 오버라이드 (당일 한정)
+- [x] 수면 시간 삭제(취소) 가능
+- [x] 낮잠 카드 잠든시간 → 이전 깨시 실제 종료 시간 표시
 
-| 파일 | 테스트 |
-|------|--------|
-| `__tests__/utils/age.test.ts` | getAgeInMonths, getAgeLabel |
-| `__tests__/utils/time.test.ts` | formatDuration, parseTimeString, formatTimeRange |
-| `__tests__/components/ActivityList.test.tsx` | 로딩 스켈레톤, 활동 목록 렌더링 |
-| `__tests__/lib/claude-chat.test.ts` | detectResponseType |
-| `__tests__/lib/babytime-parser.test.ts` | parseBabyTimeCsv |
+### DailyChat (일일 AI Q&A)
+- [x] 매일 아침 AI 첫 인사 + 루틴 확인
+- [x] 루틴 유지/스킵 토글
+- [x] AI 대화를 통한 전체 스케줄 업데이트
+
+### 추억 탭
+- [x] /memories 페이지 — 날짜별 활동 로그 리스트
+- [x] 메모 편집/삭제
+- [x] 표정 아이콘 통일 (😊/😟)
+- [ ] 달력 GUI (월간 뷰)
+- [ ] 일간 상세 뷰 (날짜 탭 → 그날 활동 + 인사이트)
+- [ ] 발달 영역 레이더 차트
+- [ ] 선호/비선호 활동 랭킹
+- [ ] 시간대별 패턴 분석
+- [ ] AI 월간 요약 인사이트
+
+### 주간 뷰 (레거시)
+- [x] /week 페이지 유지 (직접 URL 접근 가능)
+- [x] 향후 6일 날짜 탭 + 깨시 카드
 
 ---
 
@@ -60,74 +64,71 @@
 src/
 ├── app/
 │   ├── page.tsx                    # 오늘 화면 (메인)
-│   ├── week/page.tsx               # 주간 뷰
+│   ├── memories/page.tsx           # 추억 탭
+│   ├── week/page.tsx               # 주간 뷰 (레거시)
 │   ├── settings/page.tsx           # 설정 화면
 │   ├── login/page.tsx              # 로그인
 │   ├── onboarding/page.tsx         # 온보딩
 │   ├── join/page.tsx               # 초대 링크 수락
 │   └── api/
-│       ├── activities/route.ts     # Claude 활동 추천 + 캐싱
-│       ├── chat/route.ts           # Claude 대화 (auth guard 있음)
-│       ├── invite/route.ts         # 초대 링크 생성
-│       └── import/route.ts         # BabyTime CSV 파싱
+│       ├── activities/             # AI 활동 추천 + 캐싱 + 리프레시
+│       ├── activity-logs/          # 활동 로그 CRUD
+│       ├── classify-activity/      # 커스텀 활동 AI 카테고리 분류
+│       ├── custom-tags/            # 사용자 커스텀 태그 CRUD
+│       ├── chat/                   # AI 대화
+│       ├── daily-chat/             # 일일 AI Q&A + 루틴 상태
+│       ├── sleep-logs/             # 수면 로그 CRUD
+│       ├── routines/               # 루틴 관리
+│       ├── invite/                 # 초대 링크 생성
+│       └── import/                 # BabyTime CSV 파싱
 ├── components/
 │   ├── wake-window-card/
-│   │   ├── WakeWindowCard.tsx      # 깨시 카드 (활동 + 채팅)
-│   │   ├── ActivityList.tsx        # 활동 목록 + 로딩
+│   │   ├── WakeWindowCard.tsx      # 깨시 카드
+│   │   ├── ActivityList.tsx        # 활동 목록 + 커스텀 로그
+│   │   ├── ActivityItem.tsx        # 개별 활동 (체크/피드백/메모/시간수정)
+│   │   ├── AddCustomActivity.tsx   # 커스텀 활동 추가
 │   │   └── ChatBox.tsx             # AI 대화 박스
-│   ├── settings/
-│   │   ├── WakeWindowSettings.tsx  # 깨시 횟수/시간 설정
-│   │   └── BabyTimeImport.tsx      # CSV 가져오기 UI
+│   ├── sleep-card/SleepCard.tsx    # 수면 카드
+│   ├── daily-chat/DailyChat.tsx    # 일일 AI Q&A
+│   ├── settings/                   # 설정 관련 컴포넌트
 │   ├── week/WeekTabs.tsx           # 날짜 탭
-│   └── ui/BottomNav.tsx            # 하단 네비
+│   └── ui/BottomNav.tsx            # 하단 네비 (오늘/추억/설정)
 ├── lib/
 │   ├── claude/
-│   │   ├── activities.ts           # generateActivities()
-│   │   └── chat.ts                 # chat(), detectResponseType()
+│   │   ├── activities.ts           # generateActivities() + category
+│   │   ├── infant-dev-reference.ts # 근거 기반 발달 데이터
+│   │   ├── chat.ts                 # chat(), detectResponseType()
+│   │   └── daily-chat.ts           # 일일 AI 대화
 │   ├── supabase/
 │   │   ├── client.ts               # 브라우저 클라이언트
 │   │   ├── server.ts               # 서버 클라이언트
-│   │   └── types.ts                # 공유 인터페이스
+│   │   └── types.ts                # 공유 인터페이스 (ActivityCategory 포함)
 │   ├── utils/age.ts                # getAgeInMonths()
-│   ├── utils/time.ts               # formatDuration() 등
+│   ├── utils/time.ts               # formatDuration(), formatPeriodTime() 등
 │   └── babytime/parser.ts          # parseBabyTimeCsv()
 └── hooks/
     ├── useProfile.ts
     └── useWakeWindows.ts
 
-supabase/migrations/001_initial_schema.sql   # DB 스키마 (RLS 포함)
+supabase/migrations/
+├── 001_initial_schema.sql
+├── 002_add_cache_duration.sql
+├── 003_add_routines.sql
+├── 004_add_cache_routines.sql
+├── 005_fix_cache_integrity.sql
+├── 006_daily_chat_and_routine_skip.sql
+├── 007_custom_tags.sql             # (custom_activity_tags 테이블)
+├── 008_sleep_logs.sql              # (sleep_logs 테이블)
+└── 009_activity_category.sql       # (category 컬럼 추가)
 ```
 
 ---
 
-## 배포 남은 작업
+## 다음 작업 (예정)
 
-`DEPLOY.md` 참고. 요약:
-
-1. **Supabase 설정**
-   - `supabase/migrations/001_initial_schema.sql` 실행
-   - Auth → Email → Magic Link 활성화
-   - Auth → URL Configuration → Site URL = `https://your-domain.vercel.app`
-
-2. **Vercel 환경변수 설정**
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=
-   ANTHROPIC_API_KEY=
-   NEXT_PUBLIC_APP_URL=https://your-domain.vercel.app
-   ```
-
-3. **Vercel 배포**
-   ```bash
-   vercel --prod
-   ```
-
----
-
-## 알려진 이슈 (잔여)
-
-- `useProfile` / `useWakeWindows` hooks가 RLS에만 의존 (명시적 user 필터 없음) — RLS가 올바르게 설정되면 안전하지만, 추가 방어 코드 고려 가능
-- `WakeWindowCard` 컴포넌트 테스트 없음 (Claude API mocking 복잡성으로 생략)
+1. **추억 탭 리뉴얼** — 달력 GUI + 일간 뷰 + 인사이트 카드
+2. **DailyChat 인사이트 연동** — 누적 통계 기반 아침 인사 개선
+3. **발달 영역 분석** — 레이더 차트 + 주간/월간 리포트
 
 ---
 
@@ -135,7 +136,7 @@ supabase/migrations/001_initial_schema.sql   # DB 스키마 (RLS 포함)
 
 - **프레임워크:** Next.js 14 App Router
 - **DB/Auth:** Supabase (PostgreSQL + Magic Link)
-- **AI:** Anthropic SDK (`claude-sonnet-4-6`)
+- **AI:** OpenAI GPT-5.4-nano (활동 추천, 카테고리 분류, 대화)
 - **스타일:** Tailwind CSS (amber 테마, max-w-md 모바일)
 - **테스트:** Jest + @swc/jest + @testing-library/react
 - **배포:** Vercel + Supabase
