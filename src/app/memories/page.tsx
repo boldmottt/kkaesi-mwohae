@@ -154,7 +154,7 @@ export default function MemoriesPage() {
       )}
 
       {selectedDate && !loadingDay && (
-        <DayDetailView date={selectedDate} logs={dayLogs} onClose={handleCloseDay} />
+        <DayDetailView date={selectedDate} logs={dayLogs} profileId={profile!.id} onClose={handleCloseDay} />
       )}
 
       {!selectedDate && !loadingCounts && monthTotal === 0 && (

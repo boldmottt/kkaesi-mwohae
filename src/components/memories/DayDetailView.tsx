@@ -1,10 +1,11 @@
 'use client'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityLog, ActivityCategory } from '@/lib/supabase/types'
 
 interface Props {
   date: string
   logs: ActivityLog[]
+  profileId: string
   onClose: () => void
 }
 
@@ -33,6 +34,8 @@ const CATEGORY_SHORT: Record<ActivityCategory, string> = {
   cognitive: '지',
   emotional: '정',
 }
+
+const gamjaStyle = { fontFamily: 'var(--font-gamja), cursive' }
 
 function formatDateHeader(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number)
@@ -150,7 +153,42 @@ function DotCircle({ categories, seed }: {
   )
 }
 
-export function DayDetailView({ date, logs, onClose }: Props) {
+export function DayDetailView({ date, logs, profileId, onClose }: Props) {
+  const [summary, setSummary] = useState<string | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+
+  // AI 요약 로드
+  useEffect(() => {
+    if (!profileId || !date) return
+    // 로그가 없으면 요약 불필요
+    const meaningful = logs.filter(
+      l => l.did || (l.note ?? '').trim().length > 0 || l.rating !== 0
+    )
+    if (meaningful.length === 0) {
+      setSummary(null)
+      return
+    }
+
+    let cancelled = false
+    async function loadSummary() {
+      setSummaryLoading(true)
+      try {
+        const res = await fetch(
+          `/api/daily-summary?profileId=${profileId}&date=${date}`
+        )
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (!cancelled) setSummary(data.summary ?? null)
+      } catch {
+        // 실패 시 무시
+      } finally {
+        if (!cancelled) setSummaryLoading(false)
+      }
+    }
+    loadSummary()
+    return () => { cancelled = true }
+  }, [profileId, date, logs])
+
   // 전체 시간대 추출 (비어있는 시간대 포함)
   const maxWindow = useMemo(() => {
     if (logs.length === 0) return -1
@@ -211,9 +249,19 @@ export function DayDetailView({ date, logs, onClose }: Props) {
           </h2>
         </div>
 
-        {/* AI 요약 자리 (Phase 3에서 채울 예정) */}
+        {/* AI 한줄 요약 */}
         <div className="mb-4 p-3 bg-white/60 dark:bg-gray-800/60 rounded-xl border border-dashed border-gray-200 dark:border-gray-600">
-          <p className="text-xs text-gray-400 dark:text-gray-300">AI 한줄 요약이 들어갈 자리예요</p>
+          {summaryLoading ? (
+            <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-300">
+              <span className="animate-pulse">💭</span> 요약을 만들고 있어요...
+            </div>
+          ) : summary ? (
+            <p className="text-sm text-amber-700 dark:text-amber-400 font-medium" style={gamjaStyle}>
+              {summary}
+            </p>
+          ) : (
+            <p className="text-xs text-gray-400 dark:text-gray-300">기록이 쌓이면 AI 한줄 요약이 나타나요</p>
+          )}
         </div>
 
         {/* 타임라인 */}

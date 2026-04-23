@@ -133,3 +133,11 @@ export interface CustomActivityTag {
   category: ActivityCategory
   created_at: string
 }
+
+export interface DailySummary {
+  id: string
+  profile_id: string
+  summary_date: string
+  summary: string
+  created_at: string
+}
