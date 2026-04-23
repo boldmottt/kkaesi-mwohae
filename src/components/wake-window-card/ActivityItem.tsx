@@ -242,10 +242,7 @@ export function ActivityItem({
               <span className={`font-semibold ${did ? 'line-through text-gray-400' : ''}`}>
                 {activity.name}
               </span>
-<<<<<<< HEAD
-=======
               {/* 시간 배지 — 체크 후 탭하면 수정 모드 */}
->>>>>>> baf3600 (feat: activity category 필드 추가 — AI 자동 분류 + DB 저장)
               <button
                 type="button"
                 onClick={() => did && setDurationEditing(!durationEditing)}
@@ -262,10 +259,7 @@ export function ActivityItem({
           </div>
         </div>
 
-<<<<<<< HEAD
-=======
         {/* 시간 수정 UI — 체크 + 수정 모드일 때만 */}
->>>>>>> baf3600 (feat: activity category 필드 추가 — AI 자동 분류 + DB 저장)
         {did && durationEditing && (
           <div className="mt-2 flex items-center gap-2">
             <button
@@ -289,15 +283,6 @@ export function ActivityItem({
             >
               +30분
             </button>
-<<<<<<< HEAD
-            <button
-              type="button"
-              onClick={handleDurationReset}
-              className="px-2.5 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              초기화
-            </button>
-=======
             {durationChanged && (
               <button
                 type="button"
@@ -307,7 +292,6 @@ export function ActivityItem({
                 초기화
               </button>
             )}
->>>>>>> baf3600 (feat: activity category 필드 추가 — AI 자동 분류 + DB 저장)
             <button
               type="button"
               onClick={() => setDurationEditing(false)}
@@ -318,10 +302,7 @@ export function ActivityItem({
           </div>
         )}
 
-<<<<<<< HEAD
-=======
         {/* 3단계 표정 피드백 */}
->>>>>>> baf3600 (feat: activity category 필드 추가 — AI 자동 분류 + DB 저장)
         {did && (
           <div className="flex items-center gap-1 mt-2">
             <button
