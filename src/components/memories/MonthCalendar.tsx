@@ -11,6 +11,10 @@ interface Props {
   dayCategoryData: Record<string, CategoryCounts>
   onSelectDate: (date: string) => void
   onChangeMonth: (year: number, month: number) => void
+  // 인사이트 모드
+  insightMode?: boolean
+  insightDates?: Set<string>
+  onToggleInsightDate?: (date: string) => void
 }
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
@@ -149,6 +153,9 @@ export function MonthCalendar({
   dayCategoryData,
   onSelectDate,
   onChangeMonth,
+  insightMode = false,
+  insightDates,
+  onToggleInsightDate,
 }: Props) {
   const today = getTodayString()
 
@@ -219,6 +226,13 @@ export function MonthCalendar({
         </button>
       </div>
 
+      {/* 인사이트 모드 안내 */}
+      {insightMode && (
+        <div className="text-center text-xs text-violet-500 mb-2">
+          인사이트를 볼 날짜를 선택하세요 · {insightDates?.size ?? 0}일 선택됨
+        </div>
+      )}
+
       {/* 요일 헤더 */}
       <div className="grid grid-cols-7 gap-0 mb-1">
         {DAY_LABELS.map(day => (
@@ -241,31 +255,53 @@ export function MonthCalendar({
           const isFuture = dateStr > today
           const categories = dayCategoryData[dateStr]
           const hasActivity = categories && Object.values(categories).some(c => (c ?? 0) > 0)
-          const dow = new Date(
-            parseInt(dateStr.split('-')[0]),
-            parseInt(dateStr.split('-')[1]) - 1,
-            dayNum
-          ).getDay()
+          const isInsightSelected = insightMode && insightDates?.has(dateStr)
+
+          const handleClick = () => {
+            if (isFuture) return
+            if (insightMode) {
+              // 인사이트 모드: 활동이 있는 날만 선택 가능
+              if (hasActivity && onToggleInsightDate) {
+                onToggleInsightDate(dateStr)
+              }
+            } else {
+              onSelectDate(dateStr)
+            }
+          }
 
           return (
             <button
               key={dateStr}
-              onClick={() => !isFuture && onSelectDate(dateStr)}
-              disabled={isFuture}
+              onClick={handleClick}
+              disabled={isFuture && !insightMode}
               className={`h-12 flex flex-col items-center justify-start pt-1 rounded-lg transition-colors relative ${
-                isSelected
-                  ? 'bg-amber-50 ring-1 ring-amber-300'
-                  : isFuture
-                    ? 'text-gray-200 cursor-default'
-                    : 'hover:bg-gray-50'
+                isInsightSelected
+                  ? 'bg-violet-100 dark:bg-violet-900/30 ring-2 ring-violet-400'
+                  : isSelected
+                    ? 'bg-amber-50 ring-1 ring-amber-300'
+                    : isFuture
+                      ? 'text-gray-200 cursor-default'
+                      : hasActivity
+                        ? 'hover:bg-gray-50'
+                        : insightMode
+                          ? 'opacity-30 cursor-default'
+                          : 'hover:bg-gray-50'
               }`}
             >
               <span className={`text-sm ${isToday ? 'font-bold text-amber-600' : ''}`}>
                 {dayNum}
               </span>
               {/* 오늘 표시: 작은 밑줄 */}
-              {isToday && (
+              {isToday && !insightMode && (
                 <div className="w-3 h-0.5 bg-amber-400 rounded-full mt-0.5" />
+              )}
+              {/* 인사이트 선택 체크 */}
+              {isInsightSelected && (
+                <div className="absolute top-0.5 right-0.5">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
               )}
               {/* 점묘화 */}
               {hasActivity && categories && (
