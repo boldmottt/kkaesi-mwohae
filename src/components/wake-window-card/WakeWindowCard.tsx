@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Activity, WakeWindow } from '@/lib/supabase/types'
 import { ActivityList } from './ActivityList'
 import { AddCustomActivity } from './AddCustomActivity'
@@ -36,53 +36,51 @@ export function WakeWindowCard({
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [logsRefreshKey, setLogsRefreshKey] = useState(0)
+  const hasFetched = useRef(false)
 
-  const requestBody = {
-    profileId,
-    windowIndex,
-    totalWindows,
-    durationMinutes: wakeWindow.duration_minutes,
-    startTime: wakeWindow.start_time,
-    routines: wakeWindow.routines,
-    ageMonths,
-    ageDays,
-    date,
+  // requestBody는 최신 wakeWindow 값 사용 (refresh 시)
+  function buildRequestBody() {
+    return {
+      profileId,
+      windowIndex,
+      totalWindows,
+      durationMinutes: wakeWindow.duration_minutes,
+      startTime: wakeWindow.start_time,
+      routines: wakeWindow.routines,
+      ageMonths,
+      ageDays,
+      date,
+    }
   }
 
+  // overrideActivities가 있으면 바로 사용
   useEffect(() => {
     if (overrideActivities && overrideActivities.length > 0) {
       setActivities(overrideActivities)
       setLoading(false)
+      hasFetched.current = true
     }
   }, [overrideActivities])
 
+  // 최초 1회만 fetch (start_time 변경으로 재fetch하지 않음)
   useEffect(() => {
-    const lsKey = `activities_v1_${profileId}_${date}_${windowIndex}_${wakeWindow.duration_minutes}_${wakeWindow.routines ?? ''}`
-
-    try {
-      const stored = localStorage.getItem(lsKey)
-      if (stored) {
-        setActivities(JSON.parse(stored))
-        setLoading(false)
-        return
-      }
-    } catch {}
+    if (hasFetched.current) return
+    if (overrideActivities && overrideActivities.length > 0) return
 
     async function fetchActivities() {
-      if (overrideActivities && overrideActivities.length > 0) return
-
       setLoading(true)
       setError(null)
       try {
         const res = await fetch('/api/activities', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify(buildRequestBody()),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Failed')
         setActivities(data.activities)
         onActivitiesLoaded?.(windowIndex, data.activities)
+        hasFetched.current = true
       } catch {
         setError('활동 추천을 불러오지 못했어요.')
       } finally {
@@ -91,7 +89,7 @@ export function WakeWindowCard({
     }
     fetchActivities()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileId, windowIndex, totalWindows, wakeWindow.duration_minutes, wakeWindow.start_time, wakeWindow.routines, ageMonths, ageDays, date])
+  }, [profileId, windowIndex, date])
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -100,7 +98,7 @@ export function WakeWindowCard({
       const res = await fetch('/api/activities/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(buildRequestBody()),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed')
