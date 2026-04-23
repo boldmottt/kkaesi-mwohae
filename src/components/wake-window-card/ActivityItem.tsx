@@ -169,8 +169,8 @@ export function ActivityItem({
   }
 
   function handleDurationReset() {
-    setActualDuration(activity.duration)
-    save({ did: true, rating, note: note.trim() ? note : null, duration: activity.duration })
+    setActualDuration('0분')
+    save({ did: true, rating, note: note.trim() ? note : null, duration: '0분' })
   }
 
   function onNoteChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
@@ -283,15 +283,13 @@ export function ActivityItem({
             >
               +30분
             </button>
-            {durationChanged && (
-              <button
-                type="button"
-                onClick={handleDurationReset}
-                className="px-2.5 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                초기화
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleDurationReset}
+              className="px-2.5 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              초기화
+            </button>
             <button
               type="button"
               onClick={() => setDurationEditing(false)}
