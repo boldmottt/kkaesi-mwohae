@@ -11,18 +11,18 @@ export default function SettingsPage() {
   const router = useRouter()
   const { profile } = useProfile()
   const { wakeWindows } = useWakeWindows(profile?.id)
-  const [windows, setWindows] = useState([])
-  const [inviteUrl, setInviteUrl] = useState(null)
+  const [windows, setWindows] = useState<WakeWindowDraft[]>([])
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
   // 마이그레이션 상태
   const [migrating, setMigrating] = useState(false)
-  const [migrateResult, setMigrateResult] = useState(null)
+  const [migrateResult, setMigrateResult] = useState<string | null>(null)
 
   // 캐시 초기화 상태
   const [clearingCache, setClearingCache] = useState(false)
-  const [cacheResult, setCacheResult] = useState(null)
+  const [cacheResult, setCacheResult] = useState<string | null>(null)
 
   useEffect(() => {
     if (wakeWindows.length > 0) {
@@ -143,10 +143,12 @@ export default function SettingsPage() {
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <h2 className="font-semibold text-amber-800 mb-3">깨시 설정</h2>
 
+          <WakeWindowSettings value={windows} onChange={setWindows} />
+
           <button
             onClick={handleSaveWindows}
-            disabled={saving}
-            className="w-full bg-amber-500 text-white py-2 rounded-lg"
+            disabled={saving || windows.length === 0}
+            className="w-full bg-amber-500 text-white py-2 rounded-lg mt-4"
           >
             {saving ? '저장 중...' : saveSuccess ? '저장됨 ✓' : '저장'}
           </button>
