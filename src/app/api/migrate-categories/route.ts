@@ -35,15 +35,19 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { data: logs, error } = await supabase
+    const { data: logs, error: logsError } = await supabase
       .from('activity_logs')
       .select('id, activity_name, category')
       .or('category.eq.other,category.is.null')
       .limit(1000)
 
-    if (error) throw error
+    if (logsError) {
+      console.error('Supabase query error:', JSON.stringify(logsError))
+      return NextResponse.json({ error: `DB 조회 오류: ${logsError.message ?? JSON.stringify(logsError)}` }, { status: 500 })
+    }
+
     if (!logs || logs.length === 0) {
-      return NextResponse.json({ message: '분류할 활동이 없어요', updated: 0 })
+      return NextResponse.json({ message: '분류할 활동이 없어요', updated: 0, tagsUpdated: 0 })
     }
 
     const nameCache = new Map<string, string>()
@@ -97,6 +101,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    await supabase.from('activity_cache').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+
     return NextResponse.json({
       message: `${updated}개 활동 분류 완료!`,
       totalLogs: logs.length,
@@ -104,9 +110,18 @@ export async function POST(req: NextRequest) {
       skipped,
       tagsUpdated,
       classifications: Object.fromEntries(nameCache),
+      cacheCleared: true,
     })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+  } catch (error: unknown) {
+    let message = '알 수 없는 오류'
+    if (error instanceof Error) {
+      message = error.message
+    } else if (typeof error === 'string') {
+      message = error
+    } else {
+      message = JSON.stringify(error)
+    }
+    console.error('Migration error:', message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
