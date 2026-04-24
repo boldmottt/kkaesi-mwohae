@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'profileId required' }, { status: 400 })
     }
 
-    // 월간 카테고리별 카운트 모드
+    // 월간 전체 로그 반환 (클라이언트에서 dayCategoryData 구축)
     if (month) {
       const [y, m] = month.split('-').map(Number)
       const startDate = `${y}-${String(m).padStart(2, '0')}-01`
@@ -47,24 +47,16 @@ export async function GET(req: NextRequest) {
 
       const { data, error } = await supabase
         .from('activity_logs')
-        .select('log_date, did, note, rating, category')
+        .select('*')
         .eq('profile_id', profileId)
         .gte('log_date', startDate)
         .lte('log_date', endDate)
+        .order('log_date', { ascending: false })
+        .order('window_index', { ascending: true })
 
       if (error) throw error
 
-      // 날짜별 카테고리 카운트
-      const dayCategoryData: Record<string, Record<string, number>> = {}
-      for (const row of data ?? []) {
-        const hasMeaning = row.did || (row.note && row.note.trim().length > 0) || row.rating !== 0
-        if (!hasMeaning) continue
-        if (!dayCategoryData[row.log_date]) dayCategoryData[row.log_date] = {}
-        const cat = (row.category as string) ?? 'other'
-        dayCategoryData[row.log_date][cat] = (dayCategoryData[row.log_date][cat] ?? 0) + 1
-      }
-
-      return NextResponse.json({ dayCategoryData })
+      return NextResponse.json({ logs: data ?? [] })
     }
 
     // 기존: 상세 로그 반환
