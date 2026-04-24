@@ -1,11 +1,13 @@
 'use client'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityLog, ActivityCategory } from '@/lib/supabase/types'
 
 interface Props {
   logs: ActivityLog[]
   dateCount: number
   isCustomRange: boolean
+  profileId: string
+  month: string // YYYY-MM
   onStartSelectDates: () => void
   onResetToMonthly: () => void
 }
@@ -38,7 +40,6 @@ function parseDurationMinutes(dur: string | null): number {
   return match ? parseInt(match[1], 10) : 0
 }
 
-// 오각형 레이더 차트
 function PentagonRadar({
   values,
   size = 180,
@@ -89,8 +90,7 @@ function PentagonRadar({
       ctx.stroke()
     }
 
-    const catKeys = CATS as string[]
-    const maxVal = Math.max(...catKeys.map(k => Math.max(0.05, values[k] ?? 0)))
+    const maxVal = Math.max(...CATS.map(cat => Math.max(0.05, values[cat] ?? 0)))
 
     // 데이터 다각형 채우기
     ctx.beginPath()
@@ -106,7 +106,7 @@ function PentagonRadar({
     ctx.fillStyle = 'rgba(168,85,247,0.12)'
     ctx.fill()
 
-    // 데이터 다각형 테두리
+    // 데이터 다각형 테두리 + 포인트
     ctx.beginPath()
     for (let i = 0; i < 5; i++) {
       const cat = CATS[i]
@@ -115,33 +115,30 @@ function PentagonRadar({
       const pt = getPoint(i, r)
       if (i === 0) ctx.moveTo(pt.x, pt.y)
       else ctx.lineTo(pt.x, pt.y)
+
+      // 포인트 원
+      ctx.moveTo(pt.x + 4, pt.y)
+      ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2)
+      ctx.fillStyle = CATEGORY_HEX[cat]
+      ctx.fill()
     }
     ctx.closePath()
     ctx.strokeStyle = '#a855f7'
     ctx.lineWidth = 2
     ctx.stroke()
 
-    // 포인트 + 레이블
+    // 레이블 (바깥쪽)
     for (let i = 0; i < 5; i++) {
       const cat = CATS[i]
       const val = Math.max(0.05, values[cat] ?? 0)
       const r = (val / maxVal) * maxRadius
-      const pt = getPoint(i, r)
+      const pt = getPoint(i, r + 18)
 
-      ctx.beginPath()
-      ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2)
-      ctx.fillStyle = CATEGORY_HEX[cat]
-      ctx.fill()
-      ctx.strokeStyle = 'white'
-      ctx.lineWidth = 1.5
-      ctx.stroke()
-
-      const labelPt = getPoint(i, maxRadius + 18)
       ctx.fillStyle = CATEGORY_HEX[cat]
       ctx.font = 'bold 10px sans-serif'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillText(CATEGORY_LABELS[cat], labelPt.x, labelPt.y)
+      ctx.fillText(CATEGORY_LABELS[cat], pt.x, pt.y)
     }
 
   }, [values, size])
@@ -149,12 +146,9 @@ function PentagonRadar({
   return <canvas ref={canvasRef} className="block" />
 }
 
-// 주간 트렌드 스택 바
 function WeeklyTrendBars({ logs }: { logs: ActivityLog[] }) {
   const weekData = useMemo(() => {
     const weeks: { label: string; counts: Record<ActivityCategory, number>; total: number }[] = []
-
-    // 날짜별로 주차 분류 (1-7일: 1주, 8-14일: 2주, ...)
     const meaningful = logs.filter(l => l.did || (l.note ?? '').trim().length > 0 || l.rating !== 0)
 
     for (let w = 0; w < 4; w++) {
@@ -186,7 +180,6 @@ function WeeklyTrendBars({ logs }: { logs: ActivityLog[] }) {
       <div className="flex items-end gap-3 justify-center" style={{ height: 100 }}>
         {weekData.map((week, idx) => {
           const barHeight = week.total > 0 ? Math.max(12, (week.total / maxTotal) * 80) : 4
-
           return (
             <div key={idx} className="flex flex-col items-center gap-1">
               {/* 스택 바 */}
@@ -197,6 +190,7 @@ function WeeklyTrendBars({ logs }: { logs: ActivityLog[] }) {
                   CATS.map(cat => {
                     const count = week.counts[cat] ?? 0
                     if (count === 0) return null
+                    const pct = (count / week.total) * 100
                     return (
                       <div key={cat} className="h-full" style={{ backgroundColor: CATEGORY_HEX[cat] }} />
                     )
@@ -213,7 +207,34 @@ function WeeklyTrendBars({ logs }: { logs: ActivityLog[] }) {
   )
 }
 
-export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates, onResetToMonthly }: Props) {
+export function InsightCard({ logs, dateCount, isCustomRange, profileId, month, onStartSelectDates, onResetToMonthly }: Props) {
+  const [aiComment, setAiComment] = useState<string | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+
+  // AI 월간 코멘트 로드
+  useEffect(() => {
+    if (!profileId || !month || isCustomRange) {
+      setAiComment(null)
+      return
+    }
+    let cancelled = false
+    async function load() {
+      setAiLoading(true)
+      try {
+        const res = await fetch(`/api/monthly-insight?profileId=${profileId}&month=${month}`)
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (!cancelled) setAiComment(data.comment ?? null)
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setAiLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [profileId, month, isCustomRange])
+
   const meaningful = useMemo(() => {
     return logs.filter(l => l.did || (l.note ?? '').trim().length > 0 || l.rating !== 0)
   }, [logs])
@@ -231,10 +252,8 @@ export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates
   const radarValues = useMemo(() => {
     const total = CATS.reduce((s, c) => s + (catCounts[c] ?? 0), 0)
     if (total === 0) return Object.fromEntries(CATS.map(c => [c, 0])) as Record<ActivityCategory, number>
-
     const ratios = CATS.map(c => (catCounts[c] ?? 0) / total)
     const maxRatio = Math.max(...ratios, 0.01)
-
     const result: Record<ActivityCategory, number> = {}
     CATS.forEach((cat, i) => {
       result[cat] = ratios[i] / maxRatio
@@ -252,61 +271,41 @@ export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates
     const likeMap: Record<string, number> = {}
     const dislikeMap: Record<string, number> = {}
     for (const log of meaningful) {
-      if (log.rating === 1) {
-        likeMap[log.activity_name] = (likeMap[log.activity_name] ?? 0) + 1
-      }
-      if (log.rating === -1) {
-        dislikeMap[log.activity_name] = (dislikeMap[log.activity_name] ?? 0) + 1
-      }
+      if (log.rating === 1) likeMap[log.activity_name] = (likeMap[log.activity_name] ?? 0) + 1
+      if (log.rating === -1) dislikeMap[log.activity_name] = (dislikeMap[log.activity_name] ?? 0) + 1
     }
-    const liked = Object.entries(likeMap)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([name, count]) => ({ name, count }))
-    const disliked = Object.entries(dislikeMap)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([name, count]) => ({ name, count }))
-    return { liked, disliked }
+    return {
+      liked: Object.entries(likeMap).sort(([, a], [, b]) => b - a).slice(0, 3).map(([name, count]) => ({ name, count })),
+      disliked: Object.entries(dislikeMap).sort(([, a], [, b]) => b - a).slice(0, 3).map(([name, count]) => ({ name, count })),
+    }
   }, [meaningful])
 
   const balanceInfo = useMemo(() => {
     const total = CATS.reduce((s, c) => s + (catCounts[c] ?? 0), 0)
     if (total === 0) return { score: 0, weakest: null as ActivityCategory | null, strongest: null as ActivityCategory | null, comment: '' }
-
     const ideal = total / 5
     let deviation = 0
     let weakest: ActivityCategory = CATS[0]
     let strongest: ActivityCategory = CATS[0]
     let minCount = Infinity
     let maxCount = -1
-
     for (const cat of CATS) {
       const count = catCounts[cat] ?? 0
       deviation += Math.abs(count - ideal)
       if (count < minCount) { minCount = count; weakest = cat }
       if (count > maxCount) { maxCount = count; strongest = cat }
     }
-
     const maxDeviation = total * (4 / 5) * 2
     const score = Math.max(0, Math.round((1 - deviation / maxDeviation) * 100))
-
     let comment = ''
-    if (score >= 80) {
-      comment = '다양한 영역을 골고루 경험하고 있어요! 👏'
-    } else if (score >= 60) {
-      comment = `전반적으로 좋아요. ${CATEGORY_LABELS[weakest]} 활동을 조금 더 해보면 완벽해요`
-    } else if (score >= 40) {
-      comment = `${CATEGORY_LABELS[strongest]} 위주로 하고 있어요. ${CATEGORY_LABELS[weakest]} 활동도 시도해보세요`
-    } else {
-      comment = `${CATEGORY_LABELS[strongest]}에 많이 치우쳐 있어요. ${CATEGORY_LABELS[weakest]} 영역을 늘려보세요`
-    }
-
+    if (score >= 80) comment = '다양한 영역을 골고루 경험하고 있어요! 👏'
+    else if (score >= 60) comment = `전반적으로 좋아요. ${CATEGORY_LABELS[weakest]} 활동을 조금 더 해보면 완벽해요`
+    else if (score >= 40) comment = `${CATEGORY_LABELS[strongest]} 위주로 하고 있어요. ${CATEGORY_LABELS[weakest]} 활동도 시도해보세요`
+    else comment = `${CATEGORY_LABELS[strongest]}에 많이 치우쳐 있어요. ${CATEGORY_LABELS[weakest]} 영역을 늘려보세요`
     return { score, weakest, strongest, comment }
   }, [catCounts])
 
   const avgMinutesPerDay = dateCount > 0 ? Math.round(totalMinutes / dateCount) : 0
-
   const notEnoughData = dateCount < MIN_DAYS
 
   const scoreColorClass =
@@ -373,6 +372,30 @@ export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates
             </div>
             <p className="text-xs text-center text-gray-500">{balanceInfo.comment}</p>
           </div>
+
+          {/* AI 월간 코멘트 */}
+          {!isCustomRange && (
+            <div className="bg-violet-50 dark:bg-violet-900/20 rounded-xl p-3">
+              {aiLoading ? (
+                <div className="text-center py-2">
+                  <span className="text-xs text-violet-400 animate-pulse">
+                    전문가 코멘트를 만들고 있어요...
+                  </span>
+                </div>
+              ) : aiComment ? (
+                <div>
+                  <p className="text-xs font-semibold text-violet-600 dark:text-violet-400 mb-1">
+                    💬 이번 달 발달 코멘트
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                    {aiComment}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">데이터가 더 쌓이면 전문가 코멘트가 나타나요</p>
+              )}
+            </div>
+          )}
 
           {/* 주간 트렌드 */}
           <WeeklyTrendBars logs={logs} />
