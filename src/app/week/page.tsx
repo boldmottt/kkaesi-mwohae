@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { useProfile } from '@/hooks/useProfile'
 import { useWakeWindows } from '@/hooks/useWakeWindows'
 import { WakeWindowCard } from '@/components/wake-window-card/WakeWindowCard'
@@ -11,29 +10,28 @@ import { getAgeInMonths, getAgeInDays } from '@/lib/utils/age'
 function getDefaultDate(): string {
   const d = new Date()
   d.setDate(d.getDate() + 1)
-  return d.toISOString().split('T')[0]
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 export default function WeekPage() {
   const router = useRouter()
   const [selectedDate, setSelectedDate] = useState(getDefaultDate)
-  const { profile, loading: profileLoading } = useProfile()
+  const { profile, loading: profileLoading, isLoggedIn } = useProfile()
   const { wakeWindows, loading: windowsLoading } = useWakeWindows(profile?.id)
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) router.push('/login')
-    })
-  }, [router])
+    if (isLoggedIn === false) {
+      router.push('/login')
+    }
+  }, [isLoggedIn, router])
 
   useEffect(() => {
-    if (!profileLoading && !profile) {
+    if (isLoggedIn === true && !profileLoading && !profile) {
       router.push('/onboarding')
     }
-  }, [profile, profileLoading, router])
+  }, [isLoggedIn, profile, profileLoading, router])
 
-  if (profileLoading || windowsLoading) {
+  if (isLoggedIn === null || profileLoading || windowsLoading) {
     return (
       <main className="min-h-screen p-6">
         <p className="text-gray-400 text-sm">불러오는 중...</p>

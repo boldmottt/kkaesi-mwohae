@@ -1,7 +1,10 @@
+export type ActivityCategory = 'physical' | 'sensory' | 'language' | 'cognitive' | 'emotional' | 'other'
+
 export interface Activity {
   name: string
   duration: string
   effect: string
+  category?: ActivityCategory
 }
 
 export interface Profile {
@@ -29,6 +32,8 @@ export interface ActivityCache {
   cache_date: string
   window_index: number
   activities: Activity[]
+  duration_minutes: number | null
+  routines: string | null
   created_at: string
 }
 
@@ -62,6 +67,8 @@ export interface ActivityLog {
   did: boolean
   rating: -1 | 0 | 1
   note: string | null
+  is_custom: boolean
+  category: ActivityCategory
   created_at: string
   updated_at: string
 }
@@ -83,4 +90,54 @@ export interface Routine {
   enabled: boolean
   created_at: string
   updated_at: string
+}
+
+export interface DailyChatSession {
+  id: string
+  profile_id: string
+  chat_date: string
+  messages: ChatMessage[]
+  context_summary: string | null
+  schedule_applied: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface DailyRoutineStatus {
+  id: string
+  profile_id: string
+  status_date: string
+  window_index: number
+  routine_text: string
+  skipped: boolean
+  created_at: string
+}
+
+export interface SleepLog {
+  id: string
+  profile_id: string
+  log_date: string
+  nap_index: number
+  sleep_start: string | null
+  sleep_end: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CustomActivityTag {
+  id: string
+  profile_id: string
+  label: string
+  use_count: number
+  last_used_at: string
+  category: ActivityCategory
+  created_at: string
+}
+
+export interface DailySummary {
+  id: string
+  profile_id: string
+  summary_date: string
+  summary: string
+  created_at: string
 }
