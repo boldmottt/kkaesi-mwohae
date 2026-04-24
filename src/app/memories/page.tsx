@@ -22,7 +22,6 @@ export default function MemoriesPage() {
   const [monthlyLogs, setMonthlyLogs] = useState<ActivityLog[]>([])
 
   const [loadingCounts, setLoadingCounts] = useState(false)
-  const [loadingDay, setLoadingDay] = useState(false)
   const [loadingInsight, setLoadingInsight] = useState(false)
 
   const [insightMode, setInsightMode] = useState(false)
@@ -37,129 +36,87 @@ export default function MemoriesPage() {
     async function load() {
       setLoadingCounts(true)
       try {
-        const res = await fetch(
-          `/api/activity-logs?profileId=${profile!.id}&month=${monthStr}`
-        )
+        const res = await fetch('/api/activity-logs?profileId=' + profile!.id + '&month=' + monthStr)
         if (!res.ok || cancelled) return
         const raw = await res.json()
         const logs: ActivityLog[] = Array.isArray(raw) ? raw : (raw.logs ?? [])
-
         const data: Record<string, CategoryCounts> = {}
         for (const log of logs) {
-          if (!data[log.log_date]) data[log.log_date] = {}
+          if (!data[log.log_date]) data[log.log_date] = {} as CategoryCounts
           const cat = (log.category as string) ?? 'other'
-          data[log.log_date][cat] = (data[log.log_date][cat] ?? 0) + 1
+          data[log.log_date][cat as ActivityCategory] = (data[log.log_date][cat as ActivityCategory] ?? 0) + 1
         }
         if (!cancelled) {
           setDayCategoryData(data)
           setMonthlyLogs(logs)
         }
-      } catch {
-        // ignore
-      } finally {
-        if (!cancelled) setLoadingCounts(false)
-      }
+      } catch {}
+      finally { if (!cancelled) setLoadingCounts(false) }
     }
     load()
     return () => { cancelled = true }
   }, [profile?.id, monthStr])
 
   useEffect(() => {
-    if (!profile?.id || !selectedDate) {
-      setDayLogs([])
-      return
-    }
+    if (!profile?.id || !selectedDate) { setDayLogs([]); return }
     let cancelled = false
     async function load() {
-      setLoadingDay(true)
       try {
-        const res = await fetch(
-          `/api/activity-logs?profileId=${profile!.id}&date=${selectedDate}`
-        )
+        const res = await fetch('/api/activity-logs?profileId=' + profile!.id + '&date=' + selectedDate)
         if (!res.ok || cancelled) return
         const raw = await res.json()
         if (!cancelled) setDayLogs(Array.isArray(raw) ? raw : (raw.logs ?? []))
-      } catch {
-        // ignore
-      } finally {
-        if (!cancelled) setLoadingDay(false)
-      }
+      } catch {}
     }
     load()
     return () => { cancelled = true }
   }, [profile?.id, selectedDate])
 
   useEffect(() => {
-    if (!profile?.id || insightDates.size === 0) {
-      setInsightLogs([])
-      return
-    }
+    if (!profile?.id || insightDates.size === 0) { setInsightLogs([]); return }
     let cancelled = false
     async function load() {
       setLoadingInsight(true)
       try {
         const allLogs: ActivityLog[] = []
         for (const date of insightDates) {
-          const res = await fetch(
-            `/api/activity-logs?profileId=${profile!.id}&date=${date}`
-          )
+          const res = await fetch('/api/activity-logs?profileId=' + profile!.id + '&date=' + date)
           if (res.ok && !cancelled) {
             const raw = await res.json()
-            const logs: ActivityLog[] = Array.isArray(raw) ? raw : (raw.logs ?? [])
-            allLogs.push(...logs)
+            allLogs.push(...(Array.isArray(raw) ? raw : (raw.logs ?? [])))
           }
         }
         if (!cancelled) setInsightLogs(allLogs)
-      } catch {
-        // ignore
-      } finally {
-        if (!cancelled) setLoadingInsight(false)
-      }
+      } catch {}
+      finally { if (!cancelled) setLoadingInsight(false) }
     }
     load()
     return () => { cancelled = true }
   }, [profile?.id, insightDates])
 
   const handleChangeMonth = useCallback((y: number, m: number) => {
-    setYear(y)
-    setMonth(m)
-    setSelectedDate(null)
-    setInsightMode(false)
-    setInsightDates(new Set())
+    setYear(y); setMonth(m); setSelectedDate(null); setInsightMode(false); setInsightDates(new Set())
   }, [])
 
   const handleSelectDate = useCallback((date: string) => {
-    setSelectedDate(date)
-    setInsightMode(false)
-    setInsightDates(new Set())
+    setSelectedDate(date); setInsightMode(false); setInsightDates(new Set())
   }, [])
 
   const handleToggleInsightDate = useCallback((date: string) => {
-    setInsightDates(prev => {
-      const next = new Set(prev)
-      if (next.has(date)) next.delete(date)
-      else next.add(date)
-      return next
-    })
+    setInsightDates((prev: Set<string>) => { const next = new Set(prev); if (next.has(date)) next.delete(date); else next.add(date); return next })
   }, [])
 
   const handleStartSelectDates = useCallback(() => {
-    setSelectedDate(null)
-    setInsightMode(true)
-    setInsightDates(new Set())
+    setSelectedDate(null); setInsightMode(true); setInsightDates(new Set())
   }, [])
 
   const handleResetToMonthly = useCallback(() => {
-    setInsightMode(false)
-    setInsightDates(new Set())
-    setInsightLogs([])
+    setInsightMode(false); setInsightDates(new Set()); setInsightLogs([])
   }, [])
 
   const isCustomRange = insightMode && insightDates.size > 0
   const insightDisplayLogs = isCustomRange ? insightLogs : monthlyLogs
-  const insightDateCount = isCustomRange
-    ? insightDates.size
-    : Object.keys(dayCategoryData).length
+  const insightDateCount = isCustomRange ? insightDates.size : Object.keys(dayCategoryData).length
 
   const monthTotal = useMemo(() => {
     return Object.values(dayCategoryData).reduce((sum, counts) => {
@@ -169,7 +126,7 @@ export default function MemoriesPage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-500">불러오는 중...</p>
       </div>
     )
@@ -178,56 +135,51 @@ export default function MemoriesPage() {
   if (selectedDate && !insightMode) {
     return (
       <DayDetailView
-        profileId={profile.id}
         date={selectedDate}
-        onBack={() => setSelectedDate(null)}
+        logs={dayLogs}
+        profileId={profile.id}
+        onClose={() => setSelectedDate(null)}
       />
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm">
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-800 dark:text-white" style={gamjaStyle}>
+          <h1 className="text-xl font-bold text-gray-800" style={gamjaStyle}>
             {profile.baby_name}의 추억
           </h1>
-
-          <div className="flex gap-2">
-            {isCustomRange && (
-              <button
-                onClick={() => setInsightMode(false)}
-                className="bg-violet-500 text-white text-sm px-6 py-2 rounded-full"
-              >
-                {insightDates.size}일 선택 완료 · 인사이트 보기
-              </button>
-            )}
-          </div>
+          {isCustomRange && (
+            <button
+              onClick={() => setInsightMode(false)}
+              className="bg-violet-500 text-white text-sm px-6 py-2 rounded-full"
+            >
+              {insightDates.size}일 선택 완료 · 인사이트 보기
+            </button>
+          )}
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {/* Calendar */}
         <div className="mb-6">
           {loadingCounts ? (
             <p className="text-center text-gray-400">캘린더 불러오는 중...</p>
           ) : (
             <MonthCalendar
-              profileId={profile.id}
               year={year}
               month={month}
+              selectedDate={selectedDate}
               dayCategoryData={dayCategoryData}
-              onSelectMonth={handleChangeMonth}
               onSelectDate={handleSelectDate}
-              selecting={insightMode}
-              selectedDates={insightDates}
-              onToggleDate={handleToggleInsightDate}
+              onChangeMonth={handleChangeMonth}
+              insightMode={insightMode}
+              insightDates={insightDates}
+              onToggleInsightDate={handleToggleInsightDate}
             />
           )}
         </div>
 
-        {/* Insight mode indicator */}
         {insightMode && insightDates.size > 0 && (
           <div className="mb-4 text-center">
             <button
@@ -239,20 +191,18 @@ export default function MemoriesPage() {
           </div>
         )}
 
-        {/* Insight Card */}
         {!selectedDate && (monthTotal > 0 || isCustomRange) && (
           <InsightCard
             logs={insightDisplayLogs}
+            profileId={profile.id}
             dateCount={insightDateCount}
             isCustomRange={isCustomRange}
-            profileId={profile.id}
-            month={`${year}-${String(month).padStart(2, '0')}`}
+            month={monthStr}
             onStartSelectDates={handleStartSelectDates}
             onResetToMonthly={handleResetToMonthly}
           />
         )}
 
-        {/* Empty state */}
         {!selectedDate && monthTotal === 0 && !loadingCounts && (
           <div className="text-center py-12">
             <span className="text-4xl">📝</span>

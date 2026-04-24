@@ -37,6 +37,17 @@ export function WakeWindowCard({
   const [refreshConfirm, setRefreshConfirm] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [logsRefreshKey, setLogsRefreshKey] = useState(0)
+  const [collapsed, setCollapsed] = useState(() => {
+    if (!wakeWindow.start_time) return false
+    try {
+      const now = new Date()
+      const nowMinutes = now.getHours() * 60 + now.getMinutes()
+      const { hours, minutes } = parseTimeString(wakeWindow.start_time)
+      const startMinutes = hours * 60 + minutes
+      const endMinutes = startMinutes + wakeWindow.duration_minutes
+      return !(nowMinutes >= startMinutes && nowMinutes < endMinutes)
+    } catch { return false }
+  })
   const hasFetched = useRef(false)
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -180,12 +191,16 @@ export function WakeWindowCard({
   })()
 
   return (
-    <div className={`bg-white rounded-2xl p-5 shadow-sm transition-shadow ${isCurrentWindow ? 'ring-2 ring-amber-400 shadow-md' : ''}`}>
-      <div className="flex items-center justify-between mb-4">
-        <div>
+    <div className={`bg-white rounded-2xl shadow-sm transition-shadow ${isCurrentWindow ? 'ring-2 ring-amber-400 shadow-md' : ''}`}>
+      <button
+        type="button"
+        onClick={() => setCollapsed(c => !c)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left"
+      >
+        <div className="flex items-center gap-1.5">
           <span className="text-amber-500 font-bold text-sm">깨시{windowIndex + 1}</span>
-          {isCurrentWindow && <span className="ml-1.5 text-[10px] bg-amber-400 text-white px-1.5 py-0.5 rounded-full">지금</span>}
-          <span className="ml-2 text-gray-700 font-semibold">
+          {isCurrentWindow && <span className="text-[10px] bg-amber-400 text-white px-1.5 py-0.5 rounded-full">지금</span>}
+          <span className="ml-1 text-gray-700 font-semibold">
             {formatDuration(actualDurationMinutes ?? wakeWindow.duration_minutes)}
           </span>
         </div>
@@ -193,58 +208,72 @@ export function WakeWindowCard({
           {timeRange && (
             <span className="text-xs text-gray-400">{timeRange}</span>
           )}
-          <button
-            onClick={handleRefreshClick}
-            disabled={refreshing || loading}
-            className={`text-xs disabled:opacity-40 transition-colors ${
-              refreshConfirm
-                ? 'text-orange-500 font-semibold'
-                : 'text-gray-400 hover:text-amber-500'
-            }`}
-            title={refreshConfirm ? '한 번 더 탭하면 추천이 교체돼요' : '다시 추천받기'}
+          <svg
+            width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className={`text-gray-300 transition-transform ${collapsed ? '' : 'rotate-180'}`}
           >
-            {refreshing ? '추천 중...' : refreshConfirm ? '↻ 정말요?' : '↻ 다시 추천'}
-          </button>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </div>
-      </div>
+      </button>
 
-      {wakeWindow.routines && (
-        <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-3">
-          📌 {wakeWindow.routines}
-        </p>
+      {!collapsed && (
+        <div className="px-5 pb-5">
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={handleRefreshClick}
+              disabled={refreshing || loading}
+              className={`text-xs disabled:opacity-40 transition-colors ${
+                refreshConfirm
+                  ? 'text-orange-500 font-semibold'
+                  : 'text-gray-400 hover:text-amber-500'
+              }`}
+              title={refreshConfirm ? '한 번 더 탭하면 추천이 교체돼요' : '다시 추천받기'}
+            >
+              {refreshing ? '추천 중...' : refreshConfirm ? '↻ 정말요?' : '↻ 다시 추천'}
+            </button>
+          </div>
+
+          {wakeWindow.routines && (
+            <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-3">
+              📌 {wakeWindow.routines}
+            </p>
+          )}
+
+          <p className="text-sm text-gray-500 mb-3">🎯 이렇게 놀아줘요</p>
+
+          {error ? (
+            <p className="text-sm text-red-400">{error}</p>
+          ) : (
+            <ActivityList
+              activities={activities}
+              loading={loading}
+              profileId={profileId}
+              date={date}
+              windowIndex={windowIndex}
+              refreshKey={logsRefreshKey}
+            />
+          )}
+
+          <AddCustomActivity
+            profileId={profileId}
+            date={date}
+            windowIndex={windowIndex}
+            onSaved={handleCustomActivitySaved}
+          />
+
+          <ChatBox
+            windowIndex={windowIndex}
+            ageMonths={ageMonths}
+            durationMinutes={wakeWindow.duration_minutes}
+            currentActivities={activities}
+            onActivitiesUpdate={handleActivitiesUpdate}
+            profileId={profileId}
+            date={date}
+          />
+        </div>
       )}
-
-      <p className="text-sm text-gray-500 mb-3">🎯 이렇게 놀아줘요</p>
-
-      {error ? (
-        <p className="text-sm text-red-400">{error}</p>
-      ) : (
-        <ActivityList
-          activities={activities}
-          loading={loading}
-          profileId={profileId}
-          date={date}
-          windowIndex={windowIndex}
-          refreshKey={logsRefreshKey}
-        />
-      )}
-
-      <AddCustomActivity
-        profileId={profileId}
-        date={date}
-        windowIndex={windowIndex}
-        onSaved={handleCustomActivitySaved}
-      />
-
-      <ChatBox
-        windowIndex={windowIndex}
-        ageMonths={ageMonths}
-        durationMinutes={wakeWindow.duration_minutes}
-        currentActivities={activities}
-        onActivitiesUpdate={handleActivitiesUpdate}
-        profileId={profileId}
-        date={date}
-      />
     </div>
   )
 }
