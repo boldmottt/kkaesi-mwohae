@@ -10,7 +10,7 @@ import { BabyTimeImport } from '@/components/settings/BabyTimeImport'
 export default function SettingsPage() {
   const router = useRouter()
   const { profile } = useProfile()
-  const { wakeWindows } = useWakeWindows(profile?.id)
+  const { wakeWindows, loading: wakeLoading } = useWakeWindows(profile?.id)
   const [windows, setWindows] = useState<WakeWindowDraft[]>([])
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -116,10 +116,10 @@ export default function SettingsPage() {
     router.push('/login')
   }
 
-  if (windows.length === 0 && wakeWindows.length === 0) {
+  if (wakeLoading || !profile) {
     return (
-      <div className="min-h-screen bg-amber-50 p-6">
-        <p>불러오는 중...</p>
+      <div className="min-h-screen bg-amber-50 p-6 flex items-center justify-center">
+        <p className="text-gray-500">불러오는 중...</p>
       </div>
     )
   }
