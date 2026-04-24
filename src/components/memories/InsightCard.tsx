@@ -36,24 +36,16 @@ function parseDurationMinutes(dur: string | null): number {
   return match ? parseInt(match[1], 10) : 0
 }
 
-function seededRandom(seed: number): () => number {
-  let s = seed
-  return () => {
-    s = (s * 16807 + 0) % 2147483647
-    return (s - 1) / 2147483646
-  }
-}
-
-function InsightDotCircle({ categories, size = 100 }: {
+/** 오각형 레이더 차트 (pentagon radar chart) */
+function InsightRadarChart({ categories, size = 120 }: {
   categories: Record<ActivityCategory | string, number>
   size?: number
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const total = Object.values(categories).reduce((s, c) => s + (c ?? 0), 0)
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas || total === 0) return
+    if (!canvas) return
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
@@ -64,58 +56,162 @@ function InsightDotCircle({ categories, size = 100 }: {
     canvas.style.width = `${size}px`
     canvas.style.height = `${size}px`
     ctx.scale(dpr, dpr)
+
+    const cats: ActivityCategory[] = ['physical', 'sensory', 'language', 'cognitive', 'emotional']
+    const values = cats.map(c => categories[c] ?? 0)
+    const maxVal = Math.max(...values, 1)
+
+    const cx = size / 2
+    const cy = size / 2 + 4
+    const radius = size / 2 - 18
+
     ctx.clearRect(0, 0, size, size)
 
-    const dotCount = Math.min(80, Math.max(10, Math.round(total * 1.2)))
-    const dotRadius = 3
-    const center = size / 2
-    const radius = size / 2 - dotRadius - 1
-
-    const rand = seededRandom(42)
-    const positions: { x: number; y: number }[] = []
-    const minDist = dotRadius * 2 + 1
-    let attempts = 0
-
-    while (positions.length < dotCount && attempts < dotCount * 50) {
-      const angle = rand() * Math.PI * 2
-      const r = rand() * radius
-      const x = center + r * Math.cos(angle)
-      const y = center + r * Math.sin(angle)
-
-      const tooClose = positions.some(p => Math.hypot(p.x - x, p.y - y) < minDist)
-      if (!tooClose) {
-        positions.push({ x, y })
-      } else {
-        attempts++
-      }
-    }
-
-    const colorSlots: string[] = []
-    const entries = Object.entries(categories) as [ActivityCategory | string, number][]
-    for (const [cat, count] of entries) {
-      const proportion = count / total
-      const slots = Math.max(1, Math.round(proportion * dotCount))
-      for (let i = 0; i < slots; i++) {
-        colorSlots.push(CATEGORY_HEX[cat] ?? '#9ca3af')
-      }
-    }
-
-    for (let i = colorSlots.length - 1; i > 0; i--) {
-      const j = Math.floor(rand() * (i + 1))
-      ;[colorSlots[i], colorSlots[j]] = [colorSlots[j], colorSlots[i]]
-    }
-
-    positions.forEach((pos, idx) => {
+    // 배경 그리드 (5단계)
+    for (let level = 1; level <= 5; level++) {
+      const r = (radius / 5) * level
       ctx.beginPath()
-      ctx.arc(pos.x, pos.y, dotRadius, 0, Math.PI * 2)
-      ctx.fillStyle = colorSlots[idx] ?? '#9ca3af'
+      for (let i = 0; i <= 5; i++) {
+        const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
+        const x = cx + r * Math.cos(angle)
+        const y = cy + r * Math.sin(angle)
+        if (i === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
+      }
+      ctx.closePath()
+      ctx.strokeStyle = level === 5 ? 'rgba(156,163,175,0.3)' : 'rgba(156,163,175,0.12)'
+      ctx.lineWidth = level === 5 ? 1 : 0.5
+      ctx.stroke()
+
+      // 레벨 레이블 (가장 안쪽 제외)
+      if (level > 1 && level % 2 === 0) {
+        const labelR = (radius / 5) * level
+        ctx.fillStyle = 'rgba(156,163,175,0.4)'
+        ctx.font = '8px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillText(String(Math.round(maxVal / 5 * level)), cx, cy - labelR + 3)
+      }
+    }
+
+    // 축 선
+    for (let i = 0; i < 5; i++) {
+      const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
+      const x = cx + radius * Math.cos(angle)
+      const y = cy + radius * Math.sin(angle)
+      ctx.beginPath()
+      ctx.moveTo(cx, cy)
+      ctx.lineTo(x, y)
+      ctx.strokeStyle = 'rgba(156,163,175,0.2)'
+      ctx.lineWidth = 0.5
+      ctx.stroke()
+    }
+
+    // 데이터 영역 채우기 (반투명)
+    ctx.beginPath()
+    for (let i = 0; i <= 5; i++) {
+      const idx = i % 5
+      const angle = (Math.PI * 2 * idx) / 5 - Math.PI / 2
+      const r = (values[idx] / maxVal) * radius
+      const x = cx + r * Math.cos(angle)
+      const y = cy + r * Math.sin(angle)
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.closePath()
+    ctx.fillStyle = 'rgba(168,85,247,0.15)'
+    ctx.fill()
+
+    // 데이터 영역 테두리 (다각형)
+    ctx.beginPath()
+    for (let i = 0; i <= 5; i++) {
+      const idx = i % 5
+      const angle = (Math.PI * 2 * idx) / 5 - Math.PI / 2
+      const r = (values[idx] / maxVal) * radius
+      const x = cx + r * Math.cos(angle)
+      const y = cy + r * Math.sin(angle)
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.closePath()
+    ctx.strokeStyle = '#a855f7'
+    ctx.lineWidth = 2
+    ctx.stroke()
+
+    // 데이터 포인트 + 레이블
+    for (let i = 0; i < 5; i++) {
+      const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
+      const r = (values[i] / maxVal) * radius
+      const x = cx + r * Math.cos(angle)
+      const y = cy + r * Math.sin(angle)
+
+      // 점
+      ctx.beginPath()
+      ctx.arc(x, y, 3.5, 0, Math.PI * 2)
+      ctx.fillStyle = CATEGORY_HEX[cats[i]]
       ctx.fill()
-    })
-  }, [categories, total, size])
+      ctx.strokeStyle = 'white'
+      ctx.lineWidth = 1.5
+      ctx.stroke()
 
-  if (total === 0) return null
+      // 카테고리 레이블 (바깥쪽)
+      const labelR = radius + 14
+      const lx = cx + labelR * Math.cos(angle)
+      const ly = cy + labelR * Math.sin(angle)
 
-  return <canvas ref={canvasRef} className="rounded-full" />
+      ctx.fillStyle = CATEGORY_HEX[cats[i]]
+      ctx.font = 'bold 9px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+
+      // 값이 0이면 레이블만, 아니면 값도 표시
+      const label = values[i] > 0 ? `${CATEGORY_LABELS[cats[i]]} ${values[i]}` : CATEGORY_LABELS[cats[i]]
+      ctx.fillText(label, lx, ly)
+    }
+
+  }, [categories, size])
+
+  return <canvas ref={canvasRef} className="block" />
+}
+
+/** 균형 점수 표시 */
+function BalanceScore({ score, weakest, strongest }: {
+  score: number
+  weakest: ActivityCategory | null
+  strongest: ActivityCategory | null
+}) {
+  const scoreColor = score >= 70 ? '#4ade80' : score >= 40 ? '#fbbf24' : '#f87171'
+  const scoreLabel = score >= 80 ? '매우 균형 잡힘 ✨' : score >= 60 ? '균형良好 🌱' : score >= 40 ? '조금 치우침 ⚖️' : '편중됨 📌'
+
+  return (
+    <div className="flex items-center gap-3 mt-1">
+      {/* 원형 점수 게이지 */}
+      <div className="relative shrink-0" style={{ width: 52, height: 52 }}>
+        <svg viewBox="0 0 36 36" className="w-full h-full">
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(156,163,175,0.15)" strokeWidth="3" />
+          <circle
+            cx="18" cy="18" r="15.9" fill="none"
+            stroke={scoreColor} strokeWidth="3"
+            strokeDasharray={`${score * 0.998} 100`}
+            strokeLinecap="round"
+            transform="rotate(-90 18 18)"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xs font-bold" style={{ color: scoreColor }}>{score}</span>
+        </div>
+      </div>
+
+      {/* 상세 정보 */}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold" style={{ color: scoreColor }}>{scoreLabel}</p>
+        {weakest && strongest && weakest !== strongest && (
+          <p className="text-[10px] text-gray-400 mt-0.5">
+            {CATEGORY_LABELS[strongest]} ↑ / {CATEGORY_LABELS[weakest]} ↓
+          </p>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates, onResetToMonthly }: Props) {
@@ -234,17 +330,20 @@ export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates
       ) : (
         /* 인사이트 본문 */
         <div className="flex flex-col gap-4">
-          {/* 카테고리 균형 */}
+          {/* 카테고리 균형 - 레이더 차트 + 균형 점수 */}
           <div>
             <h4 className="text-xs font-semibold text-gray-500 mb-2">발달 영역 균형</h4>
 
-            {/* 점묘화 */}
+            {/* 오각형 레이더 차트 */}
             <div className="flex justify-center mb-3">
-              <InsightDotCircle categories={catCounts} />
+              <InsightRadarChart categories={catCounts} />
             </div>
 
-            {/* 카테고리 바 */}
-            <div className="flex flex-col gap-1.5 mb-2">
+            {/* 균형 점수 */}
+            <BalanceScore score={balanceInfo.score} weakest={balanceInfo.weakest} strongest={balanceInfo.strongest} />
+
+            {/* 카테고리 바 (상세 비율) */}
+            <div className="flex flex-col gap-1.5 mt-3 mb-2">
               {(['physical', 'sensory', 'language', 'cognitive', 'emotional'] as ActivityCategory[]).map(cat => {
                 const count = catCounts[cat] ?? 0
                 const total = Object.values(catCounts).reduce((s, c) => s + c, 0)
