@@ -10,6 +10,8 @@ interface Props {
   onResetToMonthly: () => void
 }
 
+const CATS: ActivityCategory[] = ['physical', 'sensory', 'language', 'cognitive', 'emotional']
+
 const CATEGORY_HEX: Record<ActivityCategory, string> = {
   physical: '#fb923c',
   sensory: '#a855f7',
@@ -36,9 +38,12 @@ function parseDurationMinutes(dur: string | null): number {
   return match ? parseInt(match[1], 10) : 0
 }
 
-/** 오각형 레이더 차트 (pentagon radar chart) */
-function InsightRadarChart({ categories, size = 120 }: {
-  categories: Record<ActivityCategory | string, number>
+// 오각형 레이더 차트
+function PentagonRadar({
+  values,
+  size = 180,
+}: {
+  values: Record<ActivityCategory, number>
   size?: number
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -56,159 +61,153 @@ function InsightRadarChart({ categories, size = 120 }: {
     canvas.style.width = `${size}px`
     canvas.style.height = `${size}px`
     ctx.scale(dpr, dpr)
-
-    const cats: ActivityCategory[] = ['physical', 'sensory', 'language', 'cognitive', 'emotional']
-    const values = cats.map(c => categories[c] ?? 0)
-    const maxVal = Math.max(...values, 1)
-
-    const cx = size / 2
-    const cy = size / 2 + 4
-    const radius = size / 2 - 18
-
     ctx.clearRect(0, 0, size, size)
 
-    // 배경 그리드 (5단계)
-    for (let level = 1; level <= 5; level++) {
-      const r = (radius / 5) * level
+    const center = size / 2
+    const maxRadius = size / 2 - 30
+    const angleStep = (Math.PI * 2) / 5
+    const startAngle = -Math.PI / 2
+
+    function getPoint(index: number, radius: number): { x: number; y: number } {
+      const angle = startAngle + index * angleStep
+      return {
+        x: center + radius * Math.cos(angle),
+        y: center + radius * Math.sin(angle),
+      }
+    }
+
+    for (const level of [0.2, 0.4, 0.6, 0.8, 1.0]) {
       ctx.beginPath()
-      for (let i = 0; i <= 5; i++) {
-        const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
-        const x = cx + r * Math.cos(angle)
-        const y = cy + r * Math.sin(angle)
-        if (i === 0) ctx.moveTo(x, y)
-        else ctx.lineTo(x, y)
+      for (let i = 0; i < 5; i++) {
+        const pt = getPoint(i, maxRadius * level)
+        if (i === 0) ctx.moveTo(pt.x, pt.y)
+        else ctx.lineTo(pt.x, pt.y)
       }
       ctx.closePath()
-      ctx.strokeStyle = level === 5 ? 'rgba(156,163,175,0.3)' : 'rgba(156,163,175,0.12)'
-      ctx.lineWidth = level === 5 ? 1 : 0.5
-      ctx.stroke()
-
-      // 레벨 레이블 (가장 안쪽 제외)
-      if (level > 1 && level % 2 === 0) {
-        const labelR = (radius / 5) * level
-        ctx.fillStyle = 'rgba(156,163,175,0.4)'
-        ctx.font = '8px sans-serif'
-        ctx.textAlign = 'center'
-        ctx.fillText(String(Math.round(maxVal / 5 * level)), cx, cy - labelR + 3)
-      }
-    }
-
-    // 축 선
-    for (let i = 0; i < 5; i++) {
-      const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
-      const x = cx + radius * Math.cos(angle)
-      const y = cy + radius * Math.sin(angle)
-      ctx.beginPath()
-      ctx.moveTo(cx, cy)
-      ctx.lineTo(x, y)
-      ctx.strokeStyle = 'rgba(156,163,175,0.2)'
-      ctx.lineWidth = 0.5
+      ctx.strokeStyle = level === 1.0 ? 'rgba(156,163,175,0.4)' : 'rgba(156,163,175,0.15)'
+      ctx.lineWidth = level === 1.0 ? 1 : 0.5
       ctx.stroke()
     }
 
-    // 데이터 영역 채우기 (반투명)
+    const catKeys = CATS as string[]
+    const maxVal = Math.max(...catKeys.map(k => Math.max(0.05, values[k] ?? 0)))
+
+    // 데이터 다각형 채우기
     ctx.beginPath()
-    for (let i = 0; i <= 5; i++) {
-      const idx = i % 5
-      const angle = (Math.PI * 2 * idx) / 5 - Math.PI / 2
-      const r = (values[idx] / maxVal) * radius
-      const x = cx + r * Math.cos(angle)
-      const y = cy + r * Math.sin(angle)
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
+    for (let i = 0; i < 5; i++) {
+      const cat = CATS[i]
+      const val = Math.max(0.05, values[cat] ?? 0)
+      const r = (val / maxVal) * maxRadius
+      const pt = getPoint(i, r)
+      if (i === 0) ctx.moveTo(pt.x, pt.y)
+      else ctx.lineTo(pt.x, pt.y)
     }
     ctx.closePath()
-    ctx.fillStyle = 'rgba(168,85,247,0.15)'
+    ctx.fillStyle = 'rgba(168,85,247,0.12)'
     ctx.fill()
 
-    // 데이터 영역 테두리 (다각형)
+    // 데이터 다각형 테두리
     ctx.beginPath()
-    for (let i = 0; i <= 5; i++) {
-      const idx = i % 5
-      const angle = (Math.PI * 2 * idx) / 5 - Math.PI / 2
-      const r = (values[idx] / maxVal) * radius
-      const x = cx + r * Math.cos(angle)
-      const y = cy + r * Math.sin(angle)
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
+    for (let i = 0; i < 5; i++) {
+      const cat = CATS[i]
+      const val = Math.max(0.05, values[cat] ?? 0)
+      const r = (val / maxVal) * maxRadius
+      const pt = getPoint(i, r)
+      if (i === 0) ctx.moveTo(pt.x, pt.y)
+      else ctx.lineTo(pt.x, pt.y)
     }
     ctx.closePath()
     ctx.strokeStyle = '#a855f7'
     ctx.lineWidth = 2
     ctx.stroke()
 
-    // 데이터 포인트 + 레이블
+    // 포인트 + 레이블
     for (let i = 0; i < 5; i++) {
-      const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
-      const r = (values[i] / maxVal) * radius
-      const x = cx + r * Math.cos(angle)
-      const y = cy + r * Math.sin(angle)
+      const cat = CATS[i]
+      const val = Math.max(0.05, values[cat] ?? 0)
+      const r = (val / maxVal) * maxRadius
+      const pt = getPoint(i, r)
 
-      // 점
       ctx.beginPath()
-      ctx.arc(x, y, 3.5, 0, Math.PI * 2)
-      ctx.fillStyle = CATEGORY_HEX[cats[i]]
+      ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2)
+      ctx.fillStyle = CATEGORY_HEX[cat]
       ctx.fill()
       ctx.strokeStyle = 'white'
       ctx.lineWidth = 1.5
       ctx.stroke()
 
-      // 카테고리 레이블 (바깥쪽)
-      const labelR = radius + 14
-      const lx = cx + labelR * Math.cos(angle)
-      const ly = cy + labelR * Math.sin(angle)
-
-      ctx.fillStyle = CATEGORY_HEX[cats[i]]
-      ctx.font = 'bold 9px sans-serif'
+      const labelPt = getPoint(i, maxRadius + 18)
+      ctx.fillStyle = CATEGORY_HEX[cat]
+      ctx.font = 'bold 10px sans-serif'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-
-      // 값이 0이면 레이블만, 아니면 값도 표시
-      const label = values[i] > 0 ? `${CATEGORY_LABELS[cats[i]]} ${values[i]}` : CATEGORY_LABELS[cats[i]]
-      ctx.fillText(label, lx, ly)
+      ctx.fillText(CATEGORY_LABELS[cat], labelPt.x, labelPt.y)
     }
 
-  }, [categories, size])
+  }, [values, size])
 
   return <canvas ref={canvasRef} className="block" />
 }
 
-/** 균형 점수 표시 */
-function BalanceScore({ score, weakest, strongest }: {
-  score: number
-  weakest: ActivityCategory | null
-  strongest: ActivityCategory | null
-}) {
-  const scoreColor = score >= 70 ? '#4ade80' : score >= 40 ? '#fbbf24' : '#f87171'
-  const scoreLabel = score >= 80 ? '매우 균형 잡힘 ✨' : score >= 60 ? '균형良好 🌱' : score >= 40 ? '조금 치우침 ⚖️' : '편중됨 📌'
+// 주간 트렌드 스택 바
+function WeeklyTrendBars({ logs }: { logs: ActivityLog[] }) {
+  const weekData = useMemo(() => {
+    const weeks: { label: string; counts: Record<ActivityCategory, number>; total: number }[] = []
+
+    // 날짜별로 주차 분류 (1-7일: 1주, 8-14일: 2주, ...)
+    const meaningful = logs.filter(l => l.did || (l.note ?? '').trim().length > 0 || l.rating !== 0)
+
+    for (let w = 0; w < 4; w++) {
+      const counts: Record<ActivityCategory, number> = {}
+      let total = 0
+      for (const log of meaningful) {
+        const day = parseInt(log.log_date.split('-')[2], 10)
+        const weekIdx = Math.floor((day - 1) / 7)
+        if (weekIdx !== w) continue
+        const cat = (log.category as ActivityCategory) ?? 'other'
+        if (cat === 'other') continue
+        counts[cat] = (counts[cat] ?? 0) + 1
+        total++
+      }
+      weeks.push({ label: `${w + 1}주`, counts, total })
+    }
+
+    return weeks
+  }, [logs])
+
+  const maxTotal = Math.max(...weekData.map(w => w.total), 1)
+  const hasAnyData = weekData.some(w => w.total > 0)
+
+  if (!hasAnyData) return null
 
   return (
-    <div className="flex items-center gap-3 mt-1">
-      {/* 원형 점수 게이지 */}
-      <div className="relative shrink-0" style={{ width: 52, height: 52 }}>
-        <svg viewBox="0 0 36 36" className="w-full h-full">
-          <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(156,163,175,0.15)" strokeWidth="3" />
-          <circle
-            cx="18" cy="18" r="15.9" fill="none"
-            stroke={scoreColor} strokeWidth="3"
-            strokeDasharray={`${score * 0.998} 100`}
-            strokeLinecap="round"
-            transform="rotate(-90 18 18)"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xs font-bold" style={{ color: scoreColor }}>{score}</span>
-        </div>
-      </div>
+    <div className="mt-4">
+      <h4 className="text-xs font-semibold text-gray-500 mb-2">주간 트렌드</h4>
+      <div className="flex items-end gap-3 justify-center" style={{ height: 100 }}>
+        {weekData.map((week, idx) => {
+          const barHeight = week.total > 0 ? Math.max(12, (week.total / maxTotal) * 80) : 4
 
-      {/* 상세 정보 */}
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold" style={{ color: scoreColor }}>{scoreLabel}</p>
-        {weakest && strongest && weakest !== strongest && (
-          <p className="text-[10px] text-gray-400 mt-0.5">
-            {CATEGORY_LABELS[strongest]} ↑ / {CATEGORY_LABELS[weakest]} ↓
-          </p>
-        )}
+          return (
+            <div key={idx} className="flex flex-col items-center gap-1">
+              {/* 스택 바 */}
+              <div className="w-8 rounded-t-md overflow-hidden flex flex-col-reverse" style={{ height: barHeight }}>
+                {week.total === 0 ? (
+                  <div className="h-full bg-gray-200 dark:bg-gray-600" />
+                ) : (
+                  CATS.map(cat => {
+                    const count = week.counts[cat] ?? 0
+                    if (count === 0) return null
+                    return (
+                      <div key={cat} className="h-full" style={{ backgroundColor: CATEGORY_HEX[cat] }} />
+                    )
+                  })
+                )}
+              </div>
+              {/* 라벨 */}
+              <span className="text-[10px] text-gray-400">{week.label}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -219,9 +218,8 @@ export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates
     return logs.filter(l => l.did || (l.note ?? '').trim().length > 0 || l.rating !== 0)
   }, [logs])
 
-  // 카테고리 집계
   const catCounts = useMemo(() => {
-    const counts: Record<ActivityCategory | string, number> = {}
+    const counts: Record<ActivityCategory, number> = {}
     for (const log of meaningful) {
       const cat = (log.category as ActivityCategory) ?? 'other'
       if (cat === 'other') continue
@@ -230,13 +228,26 @@ export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates
     return counts
   }, [meaningful])
 
+  const radarValues = useMemo(() => {
+    const total = CATS.reduce((s, c) => s + (catCounts[c] ?? 0), 0)
+    if (total === 0) return Object.fromEntries(CATS.map(c => [c, 0])) as Record<ActivityCategory, number>
+
+    const ratios = CATS.map(c => (catCounts[c] ?? 0) / total)
+    const maxRatio = Math.max(...ratios, 0.01)
+
+    const result: Record<ActivityCategory, number> = {}
+    CATS.forEach((cat, i) => {
+      result[cat] = ratios[i] / maxRatio
+    })
+    return result as Record<ActivityCategory, number>
+  }, [catCounts])
+
   const totalActivities = meaningful.length
 
   const totalMinutes = useMemo(() => {
     return meaningful.reduce((s, l) => s + parseDurationMinutes(l.activity_duration), 0)
   }, [meaningful])
 
-  // 선호/비선호 TOP3
   const { liked, disliked } = useMemo(() => {
     const likeMap: Record<string, number> = {}
     const dislikeMap: Record<string, number> = {}
@@ -259,31 +270,49 @@ export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates
     return { liked, disliked }
   }, [meaningful])
 
-  // 카테고리 균형 점수 (5개 카테고리가 균등할수록 높음)
   const balanceInfo = useMemo(() => {
-    const cats: ActivityCategory[] = ['physical', 'sensory', 'language', 'cognitive', 'emotional']
-    const total = cats.reduce((s, c) => s + (catCounts[c] ?? 0), 0)
-    if (total === 0) return { score: 0, weakest: null as ActivityCategory | null, strongest: null as ActivityCategory | null }
+    const total = CATS.reduce((s, c) => s + (catCounts[c] ?? 0), 0)
+    if (total === 0) return { score: 0, weakest: null as ActivityCategory | null, strongest: null as ActivityCategory | null, comment: '' }
+
     const ideal = total / 5
     let deviation = 0
-    let weakest: ActivityCategory = cats[0]
-    let strongest: ActivityCategory = cats[0]
+    let weakest: ActivityCategory = CATS[0]
+    let strongest: ActivityCategory = CATS[0]
     let minCount = Infinity
     let maxCount = -1
-    for (const cat of cats) {
+
+    for (const cat of CATS) {
       const count = catCounts[cat] ?? 0
       deviation += Math.abs(count - ideal)
       if (count < minCount) { minCount = count; weakest = cat }
       if (count > maxCount) { maxCount = count; strongest = cat }
     }
-    const maxDeviation = total * 4 / 5 * 2
-    const score = Math.round((1 - deviation / maxDeviation) * 100)
-    return { score, weakest, strongest }
+
+    const maxDeviation = total * (4 / 5) * 2
+    const score = Math.max(0, Math.round((1 - deviation / maxDeviation) * 100))
+
+    let comment = ''
+    if (score >= 80) {
+      comment = '다양한 영역을 골고루 경험하고 있어요! 👏'
+    } else if (score >= 60) {
+      comment = `전반적으로 좋아요. ${CATEGORY_LABELS[weakest]} 활동을 조금 더 해보면 완벽해요`
+    } else if (score >= 40) {
+      comment = `${CATEGORY_LABELS[strongest]} 위주로 하고 있어요. ${CATEGORY_LABELS[weakest]} 활동도 시도해보세요`
+    } else {
+      comment = `${CATEGORY_LABELS[strongest]}에 많이 치우쳐 있어요. ${CATEGORY_LABELS[weakest]} 영역을 늘려보세요`
+    }
+
+    return { score, weakest, strongest, comment }
   }, [catCounts])
 
   const avgMinutesPerDay = dateCount > 0 ? Math.round(totalMinutes / dateCount) : 0
 
   const notEnoughData = dateCount < MIN_DAYS
+
+  const scoreColorClass =
+    balanceInfo.score >= 80 ? 'text-green-500' :
+    balanceInfo.score >= 60 ? 'text-amber-500' :
+    balanceInfo.score >= 40 ? 'text-orange-500' : 'text-red-400'
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm mb-6">
@@ -312,15 +341,12 @@ export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates
       </div>
 
       {notEnoughData ? (
-        /* 데이터 부족 */
         <div className="text-center py-6">
           <span className="text-3xl">📊</span>
           <p className="text-sm text-gray-400 mt-2">데이터가 모이고 있어요</p>
           <p className="text-xs text-gray-300 mt-1">
             {MIN_DAYS - dateCount}일 더 기록하면 인사이트가 열려요!
           </p>
-
-          {/* 미리보기: 간단한 통계만 */}
           {totalActivities > 0 && (
             <div className="mt-3 text-xs text-gray-400">
               지금까지 {dateCount}일간 {totalActivities}개 활동 · 총 {totalMinutes}분
@@ -328,61 +354,30 @@ export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates
           )}
         </div>
       ) : (
-        /* 인사이트 본문 */
         <div className="flex flex-col gap-4">
-          {/* 카테고리 균형 - 레이더 차트 + 균형 점수 */}
+
+          {/* 오각형 레이더 + 균형 점수 */}
           <div>
             <h4 className="text-xs font-semibold text-gray-500 mb-2">발달 영역 균형</h4>
 
-            {/* 오각형 레이더 차트 */}
             <div className="flex justify-center mb-3">
-              <InsightRadarChart categories={catCounts} />
+              <PentagonRadar values={radarValues} />
             </div>
 
             {/* 균형 점수 */}
-            <BalanceScore score={balanceInfo.score} weakest={balanceInfo.weakest} strongest={balanceInfo.strongest} />
-
-            {/* 카테고리 바 (상세 비율) */}
-            <div className="flex flex-col gap-1.5 mt-3 mb-2">
-              {(['physical', 'sensory', 'language', 'cognitive', 'emotional'] as ActivityCategory[]).map(cat => {
-                const count = catCounts[cat] ?? 0
-                const total = Object.values(catCounts).reduce((s, c) => s + c, 0)
-                if (count === 0 || total === 0) return null
-                const pct = (count / total) * 100
-                return (
-                  <div key={cat} className="flex items-center gap-2">
-                    <span style={{ backgroundColor: CATEGORY_HEX[cat] }} className="w-1.5 h-3 rounded-full shrink-0" />
-                    <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: CATEGORY_HEX[cat] }} />
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <span className={`text-lg font-bold ${scoreColorClass}`}>
+                {balanceInfo.score}
+              </span>
+              <span className="text-xs text-gray-400">/ 100</span>
             </div>
-
-            {/* 레전드 + 비율 */}
-            <div className="flex flex-wrap gap-x-3 gap-y-1">
-              {(['physical', 'sensory', 'language', 'cognitive', 'emotional'] as ActivityCategory[]).map(cat => {
-                const count = catCounts[cat] ?? 0
-                const total = Object.values(catCounts).reduce((s, c) => s + c, 0)
-                const pct = total > 0 ? Math.round((count / total) * 100) : 0
-                return (
-                  <div key={cat} className="text-xs text-gray-500">
-                    {CATEGORY_LABELS[cat]} {pct}%
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* 균형 코멘트 */}
-            {balanceInfo.weakest && balanceInfo.strongest && (
-              <p className="text-xs text-gray-400 mt-2">
-                {CATEGORY_LABELS[balanceInfo.strongest]}이(가) 가장 많고, {CATEGORY_LABELS[balanceInfo.weakest]}이(가) 부족해요
-              </p>
-            )}
+            <p className="text-xs text-center text-gray-500">{balanceInfo.comment}</p>
           </div>
 
-          {/* 선호/비선호 */}
+          {/* 주간 트렌드 */}
+          <WeeklyTrendBars logs={logs} />
+
+          {/* 선호/비선호 TOP3 */}
           <div className="grid grid-cols-2 gap-3">
             {/* 좋아한 활동 */}
             <div>
@@ -391,13 +386,20 @@ export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates
                 <p className="text-xs text-gray-300">아직 없어요</p>
               ) : (
                 <div className="flex flex-col gap-1">
-                  {liked.map((item, i) => (
-                    <div key={i} className="flex items-center gap-1.5 text-xs">
-                      <span className="text-violet-400 font-bold">{i + 1}</span>
-                      <span className="text-gray-600 dark:text-gray-300">{item.name}</span>
-                      <span className="text-gray-400">×{item.count}</span>
-                    </div>
-                  ))}
+                  {liked.map((item, i) => {
+                    const log = meaningful.find(l => l.activity_name === item.name)
+                    const cat = (log?.category as ActivityCategory) ?? 'other'
+                    return (
+                      <div key={i} className="flex items-center gap-1.5 text-xs">
+                        <span className="text-violet-400 font-bold">{i + 1}</span>
+                        {cat !== 'other' && (
+                          <span style={{ backgroundColor: CATEGORY_HEX[cat] }} className="w-1.5 h-3 rounded-full shrink-0" />
+                        )}
+                        <span className="text-gray-600 dark:text-gray-300">{item.name}</span>
+                        <span className="text-gray-400">×{item.count}</span>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -409,13 +411,20 @@ export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates
                 <p className="text-xs text-gray-300">아직 없어요</p>
               ) : (
                 <div className="flex flex-col gap-1">
-                  {disliked.map((item, i) => (
-                    <div key={i} className="flex items-center gap-1.5 text-xs">
-                      <span className="text-orange-400 font-bold">{i + 1}</span>
-                      <span className="text-gray-600 dark:text-gray-300">{item.name}</span>
-                      <span className="text-gray-400">×{item.count}</span>
-                    </div>
-                  ))}
+                  {disliked.map((item, i) => {
+                    const log = meaningful.find(l => l.activity_name === item.name)
+                    const cat = (log?.category as ActivityCategory) ?? 'other'
+                    return (
+                      <div key={i} className="flex items-center gap-1.5 text-xs">
+                        <span className="text-orange-400 font-bold">{i + 1}</span>
+                        {cat !== 'other' && (
+                          <span style={{ backgroundColor: CATEGORY_HEX[cat] }} className="w-1.5 h-3 rounded-full shrink-0" />
+                        )}
+                        <span className="text-gray-600 dark:text-gray-300">{item.name}</span>
+                        <span className="text-gray-400">×{item.count}</span>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -428,11 +437,11 @@ export function InsightCard({ logs, dateCount, isCustomRange, onStartSelectDates
               <div className="text-[10px] text-gray-400">총 활동</div>
             </div>
             <div>
-              <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{dateCount}</div>
+              <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{dateCount}일</div>
               <div className="text-[10px] text-gray-400">활동한 날</div>
             </div>
             <div>
-              <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{avgMinutesPerDay}</div>
+              <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{avgMinutesPerDay}분</div>
               <div className="text-[10px] text-gray-400">일 평균</div>
             </div>
           </div>
