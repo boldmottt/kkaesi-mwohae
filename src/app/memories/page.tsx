@@ -6,7 +6,7 @@ import { MonthCalendar } from '@/components/memories/MonthCalendar'
 import { DayDetailView } from '@/components/memories/DayDetailView'
 import { InsightCard } from '@/components/memories/InsightCard'
 
-type CategoryCounts = Record<ActivityCategory | string, number>
+type CategoryCounts = Record<ActivityCategory, number>
 
 const gamjaStyle = { fontFamily: 'var(--font-gamja), cursive' }
 
@@ -17,7 +17,7 @@ export default function MemoriesPage() {
   const [month, setMonth] = useState(() => new Date().getMonth() + 1)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
-  const [dayCategoryData, setDayCategoryData] = useState<Record<string, Record<string, number>>>({})
+  const [dayCategoryData, setDayCategoryData] = useState<Record<string, CategoryCounts>>({})
   const [dayLogs, setDayLogs] = useState<ActivityLog[]>([])
   const [monthlyLogs, setMonthlyLogs] = useState<ActivityLog[]>([])
 
@@ -25,14 +25,12 @@ export default function MemoriesPage() {
   const [loadingDay, setLoadingDay] = useState(false)
   const [loadingInsight, setLoadingInsight] = useState(false)
 
-  // 인사이트 모드
   const [insightMode, setInsightMode] = useState(false)
   const [insightDates, setInsightDates] = useState<Set<string>>(new Set())
   const [insightLogs, setInsightLogs] = useState<ActivityLog[]>([])
 
   const monthStr = `${year}-${String(month).padStart(2, '0')}`
 
-  // 월간 카테고리 데이터 로드
   useEffect(() => {
     if (!profile?.id) return
     let cancelled = false
@@ -43,20 +41,17 @@ export default function MemoriesPage() {
           `/api/activity-logs?profileId=${profile!.id}&month=${monthStr}`
         )
         if (!res.ok || cancelled) return
-        const data = await res.json()
-        const logs: ActivityLog[] = data.logs ?? []
+        const raw = await res.json()
+        const logs: ActivityLog[] = Array.isArray(raw) ? raw : (raw.logs ?? [])
 
-        // dayCategoryData 구축
-        const catData: Record<string, Record<string, number>> = {}
+        const data: Record<string, CategoryCounts> = {}
         for (const log of logs) {
-          const hasMeaning = log.did || (log.note ?? '').trim().length > 0 || log.rating !== 0
-          if (!hasMeaning) continue
-          if (!catData[log.log_date]) catData[log.log_date] = {}
+          if (!data[log.log_date]) data[log.log_date] = {}
           const cat = (log.category as string) ?? 'other'
-          catData[log.log_date][cat] = (catData[log.log_date][cat] ?? 0) + 1
+          data[log.log_date][cat] = (data[log.log_date][cat] ?? 0) + 1
         }
         if (!cancelled) {
-          setDayCategoryData(catData)
+          setDayCategoryData(data)
           setMonthlyLogs(logs)
         }
       } catch {
@@ -69,7 +64,6 @@ export default function MemoriesPage() {
     return () => { cancelled = true }
   }, [profile?.id, monthStr])
 
-  // 선택된 날짜의 로그 로드
   useEffect(() => {
     if (!profile?.id || !selectedDate) {
       setDayLogs([])
@@ -83,8 +77,8 @@ export default function MemoriesPage() {
           `/api/activity-logs?profileId=${profile!.id}&date=${selectedDate}`
         )
         if (!res.ok || cancelled) return
-        const data = await res.json()
-        if (!cancelled) setDayLogs(data.logs ?? [])
+        const raw = await res.json()
+        if (!cancelled) setDayLogs(Array.isArray(raw) ? raw : (raw.logs ?? []))
       } catch {
         // ignore
       } finally {
@@ -95,7 +89,6 @@ export default function MemoriesPage() {
     return () => { cancelled = true }
   }, [profile?.id, selectedDate])
 
-  // 인사이트 날짜들의 로그 로드
   useEffect(() => {
     if (!profile?.id || insightDates.size === 0) {
       setInsightLogs([])
@@ -111,8 +104,9 @@ export default function MemoriesPage() {
             `/api/activity-logs?profileId=${profile!.id}&date=${date}`
           )
           if (res.ok && !cancelled) {
-            const data = await res.json()
-            allLogs.push(...(data.logs ?? []))
+            const raw = await res.json()
+            const logs: ActivityLog[] = Array.isArray(raw) ? raw : (raw.logs ?? [])
+            allLogs.push(...logs)
           }
         }
         if (!cancelled) setInsightLogs(allLogs)
@@ -141,7 +135,7 @@ export default function MemoriesPage() {
   }, [])
 
   const handleToggleInsightDate = useCallback((date: string) => {
-    setInsightDates((prev: Set<string>) => {
+    setInsightDates(prev => {
       const next = new Set(prev)
       if (next.has(date)) next.delete(date)
       else next.add(date)
@@ -161,99 +155,112 @@ export default function MemoriesPage() {
     setInsightLogs([])
   }, [])
 
-  // 인사이트 카드에 표시할 로그와 dateCount 결정
   const isCustomRange = insightMode && insightDates.size > 0
   const insightDisplayLogs = isCustomRange ? insightLogs : monthlyLogs
   const insightDateCount = isCustomRange
     ? insightDates.size
     : Object.keys(dayCategoryData).length
 
-  // 월간 총 활동이 있는지
   const monthTotal = useMemo(() => {
-    let total = 0
-    for (const counts of Object.values(dayCategoryData)) {
-      for (const n of Object.values(counts as Record<string, number>)) total += (n as number) ?? 0
-    }
-    return total
+    return Object.values(dayCategoryData).reduce((sum, counts) => {
+      return sum + Object.values(counts).reduce((s, c) => s + (c ?? 0), 0)
+    }, 0)
   }, [dayCategoryData])
 
   if (!profile) {
     return (
-      <main className="min-h-screen p-6">
-        <p className="text-gray-400 text-sm">불러오는 중...</p>
-      </main>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <p className="text-gray-500">불러오는 중...</p>
+      </div>
     )
   }
 
-  // 날짜 선택 시 → DayDetailView
   if (selectedDate && !insightMode) {
     return (
       <DayDetailView
-        date={selectedDate}
-        logs={dayLogs}
         profileId={profile.id}
-        onClose={() => setSelectedDate(null)}
+        date={selectedDate}
+        onBack={() => setSelectedDate(null)}
       />
     )
   }
 
   return (
-    <main className="min-h-screen p-6 pb-24">
-      {/* 제목 */}
-      <h1 className="text-xl font-bold text-amber-600 mb-4" style={gamjaStyle}>
-        {profile.baby_name}의 추억
-      </h1>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <header className="bg-white dark:bg-gray-800 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-xl font-bold text-gray-800 dark:text-white" style={gamjaStyle}>
+            {profile.baby_name}의 추억
+          </h1>
 
-      {/* 캘린더 */}
-      <div className="mb-4">
-        {loadingCounts ? (
-          <p className="text-sm text-gray-400">캘린더 불러오는 중...</p>
-        ) : (
-          <MonthCalendar
-            year={year}
-            month={month}
-            selectedDate={selectedDate}
-            dayCategoryData={dayCategoryData}
-            onSelectDate={handleSelectDate}
-            onChangeMonth={handleChangeMonth}
-            insightMode={insightMode}
-            insightDates={insightDates}
-            onToggleInsightDate={handleToggleInsightDate}
+          <div className="flex gap-2">
+            {isCustomRange && (
+              <button
+                onClick={() => setInsightMode(false)}
+                className="bg-violet-500 text-white text-sm px-6 py-2 rounded-full"
+              >
+                {insightDates.size}일 선택 완료 · 인사이트 보기
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 py-6">
+        {/* Calendar */}
+        <div className="mb-6">
+          {loadingCounts ? (
+            <p className="text-center text-gray-400">캘린더 불러오는 중...</p>
+          ) : (
+            <MonthCalendar
+              profileId={profile.id}
+              year={year}
+              month={month}
+              dayCategoryData={dayCategoryData}
+              onSelectMonth={handleChangeMonth}
+              onSelectDate={handleSelectDate}
+              selecting={insightMode}
+              selectedDates={insightDates}
+              onToggleDate={handleToggleInsightDate}
+            />
+          )}
+        </div>
+
+        {/* Insight mode indicator */}
+        {insightMode && insightDates.size > 0 && (
+          <div className="mb-4 text-center">
+            <button
+              onClick={() => setInsightMode(false)}
+              className="bg-violet-500 text-white text-sm px-6 py-2 rounded-full"
+            >
+              {insightDates.size}일 선택 완료 · 인사이트 보기
+            </button>
+          </div>
+        )}
+
+        {/* Insight Card */}
+        {!selectedDate && (monthTotal > 0 || isCustomRange) && (
+          <InsightCard
+            logs={insightDisplayLogs}
+            dateCount={insightDateCount}
+            isCustomRange={isCustomRange}
+            profileId={profile.id}
+            month={`${year}-${String(month).padStart(2, '0')}`}
+            onStartSelectDates={handleStartSelectDates}
+            onResetToMonthly={handleResetToMonthly}
           />
         )}
-      </div>
 
-      {/* 인사이트 모드 완료 버튼 */}
-      {insightMode && insightDates.size > 0 && (
-        <div className="flex justify-center mb-4">
-          <button
-            onClick={() => setInsightMode(false)}
-            className="bg-violet-500 text-white text-sm px-6 py-2 rounded-full"
-          >
-            {insightDates.size}일 선택 완료 · 인사이트 보기
-          </button>
-        </div>
-      )}
-
-      {/* 인사이트 카드 — 날짜 미선택 + 데이터 있을 때 */}
-      {!selectedDate && (monthTotal > 0 || isCustomRange) && (
-        <InsightCard
-          logs={insightDisplayLogs}
-          dateCount={insightDateCount}
-          isCustomRange={isCustomRange}
-          onStartSelectDates={handleStartSelectDates}
-          onResetToMonthly={handleResetToMonthly}
-        />
-      )}
-
-      {/* 데이터 없을 때 */}
-      {!selectedDate && monthTotal === 0 && !loadingCounts && (
-        <div className="text-center py-10">
-          <p className="text-3xl">📝</p>
-          <p className="text-sm text-gray-500 mt-2">이번 달은 아직 기록이 없어요</p>
-          <p className="text-xs text-gray-400 mt-1">활동을 기록하면 여기서 추억을 돌아볼 수 있어요</p>
-        </div>
-      )}
-    </main>
+        {/* Empty state */}
+        {!selectedDate && monthTotal === 0 && !loadingCounts && (
+          <div className="text-center py-12">
+            <span className="text-4xl">📝</span>
+            <p className="mt-3 text-gray-400">이번 달은 아직 기록이 없어요</p>
+            <p className="text-sm text-gray-300 mt-1">활동을 기록하면 여기서 추억을 돌아볼 수 있어요</p>
+          </div>
+        )}
+      </main>
+    </div>
   )
 }
