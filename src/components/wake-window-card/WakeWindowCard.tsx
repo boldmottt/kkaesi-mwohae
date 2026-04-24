@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Activity, WakeWindow } from '@/lib/supabase/types'
 import { ActivityList } from './ActivityList'
 import { AddCustomActivity } from './AddCustomActivity'
@@ -34,9 +34,15 @@ export function WakeWindowCard({
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [refreshConfirm, setRefreshConfirm] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [logsRefreshKey, setLogsRefreshKey] = useState(0)
   const hasFetched = useRef(false)
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => { if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current) }
+  }, [])
 
   // requestBody는 최신 wakeWindow 값 사용 (refresh 시)
   function buildRequestBody() {
@@ -91,7 +97,7 @@ export function WakeWindowCard({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId, windowIndex, date])
 
-  async function handleRefresh() {
+  async function doRefresh() {
     setRefreshing(true)
     setError(null)
     try {
@@ -108,6 +114,17 @@ export function WakeWindowCard({
       setError('다시 추천받기에 실패했어요.')
     } finally {
       setRefreshing(false)
+    }
+  }
+
+  function handleRefreshClick() {
+    if (refreshConfirm) {
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current)
+      setRefreshConfirm(false)
+      doRefresh()
+    } else {
+      setRefreshConfirm(true)
+      confirmTimerRef.current = setTimeout(() => setRefreshConfirm(false), 3000)
     }
   }
 
@@ -128,6 +145,18 @@ export function WakeWindowCard({
   function handleCustomActivitySaved() {
     setLogsRefreshKey(prev => prev + 1)
   }
+
+  const isCurrentWindow = useMemo(() => {
+    if (!wakeWindow.start_time) return false
+    try {
+      const now = new Date()
+      const nowMinutes = now.getHours() * 60 + now.getMinutes()
+      const { hours, minutes } = parseTimeString(wakeWindow.start_time)
+      const startMinutes = hours * 60 + minutes
+      const endMinutes = startMinutes + wakeWindow.duration_minutes
+      return nowMinutes >= startMinutes && nowMinutes < endMinutes
+    } catch { return false }
+  }, [wakeWindow.start_time, wakeWindow.duration_minutes])
 
   const actualDurationMinutes = (() => {
     if (!actualEndTime || !wakeWindow.start_time) return null
@@ -151,10 +180,11 @@ export function WakeWindowCard({
   })()
 
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm">
+    <div className={`bg-white rounded-2xl p-5 shadow-sm transition-shadow ${isCurrentWindow ? 'ring-2 ring-amber-400 shadow-md' : ''}`}>
       <div className="flex items-center justify-between mb-4">
         <div>
           <span className="text-amber-500 font-bold text-sm">깨시{windowIndex + 1}</span>
+          {isCurrentWindow && <span className="ml-1.5 text-[10px] bg-amber-400 text-white px-1.5 py-0.5 rounded-full">지금</span>}
           <span className="ml-2 text-gray-700 font-semibold">
             {formatDuration(actualDurationMinutes ?? wakeWindow.duration_minutes)}
           </span>
@@ -164,12 +194,16 @@ export function WakeWindowCard({
             <span className="text-xs text-gray-400">{timeRange}</span>
           )}
           <button
-            onClick={handleRefresh}
+            onClick={handleRefreshClick}
             disabled={refreshing || loading}
-            className="text-xs text-gray-400 hover:text-amber-500 disabled:opacity-40 transition-colors"
-            title="다시 추천받기"
+            className={`text-xs disabled:opacity-40 transition-colors ${
+              refreshConfirm
+                ? 'text-orange-500 font-semibold'
+                : 'text-gray-400 hover:text-amber-500'
+            }`}
+            title={refreshConfirm ? '한 번 더 탭하면 추천이 교체돼요' : '다시 추천받기'}
           >
-            {refreshing ? '추천 중...' : '↻ 다시 추천'}
+            {refreshing ? '추천 중...' : refreshConfirm ? '↻ 정말요?' : '↻ 다시 추천'}
           </button>
         </div>
       </div>
@@ -208,6 +242,8 @@ export function WakeWindowCard({
         durationMinutes={wakeWindow.duration_minutes}
         currentActivities={activities}
         onActivitiesUpdate={handleActivitiesUpdate}
+        profileId={profileId}
+        date={date}
       />
     </div>
   )

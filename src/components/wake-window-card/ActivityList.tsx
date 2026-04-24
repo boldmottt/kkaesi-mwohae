@@ -15,10 +15,12 @@ interface Props {
 export function ActivityList({ activities, loading, profileId, date, windowIndex, refreshKey }: Props) {
   const [logs, setLogs] = useState<Record<string, ActivityLog>>({})
   const [customLogs, setCustomLogs] = useState<ActivityLog[]>([])
+  const [logsLoading, setLogsLoading] = useState(true)
 
   useEffect(() => {
     if (!profileId || !date) return
     let cancelled = false
+    setLogsLoading(true)
     async function fetchLogs() {
       try {
         const res = await fetch(
@@ -42,6 +44,8 @@ export function ActivityList({ activities, loading, profileId, date, windowIndex
         setCustomLogs(customs)
       } catch {
         // swallow — logs are non-critical for viewing activities
+      } finally {
+        if (!cancelled) setLogsLoading(false)
       }
     }
     fetchLogs()
@@ -82,6 +86,7 @@ export function ActivityList({ activities, loading, profileId, date, windowIndex
             date={date}
             windowIndex={windowIndex}
             log={logs[activity.name]}
+            logsLoading={logsLoading}
             onChange={updateLog}
           />
         ))}
@@ -104,6 +109,7 @@ export function ActivityList({ activities, loading, profileId, date, windowIndex
                 date={date}
                 windowIndex={windowIndex}
                 log={log}
+                logsLoading={false}
                 onChange={updateLog}
               />
             ))}

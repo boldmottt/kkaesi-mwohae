@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Activity, ChatMessage } from '@/lib/supabase/types'
 
 interface Props {
@@ -8,6 +8,8 @@ interface Props {
   durationMinutes: number
   currentActivities: Activity[]
   onActivitiesUpdate: (activities: Activity[]) => void
+  profileId: string
+  date: string
 }
 
 export function ChatBox({
@@ -16,10 +18,38 @@ export function ChatBox({
   durationMinutes,
   currentActivities,
   onActivitiesUpdate,
+  profileId,
+  date,
 }: Props) {
+  const storageKey = `chat_${profileId}_${date}_w${windowIndex}`
+
   const [input, setInput] = useState('')
-  const [history, setHistory] = useState<ChatMessage[]>([])
+  const [history, setHistory] = useState<ChatMessage[]>(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const stored = localStorage.getItem(storageKey)
+      return stored ? (JSON.parse(stored) as ChatMessage[]) : []
+    } catch {
+      return []
+    }
+  })
   const [loading, setLoading] = useState(false)
+  const historyRef = useRef<HTMLDivElement>(null)
+
+  // localStorage 동기화
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(history.slice(-20)))
+    } catch {}
+  }, [history, storageKey])
+
+  // 히스토리 변경 시 스크롤 하단 고정
+  useEffect(() => {
+    if (historyRef.current) {
+      historyRef.current.scrollTop = historyRef.current.scrollHeight
+    }
+  }, [history])
 
   async function handleSend() {
     if (!input.trim() || loading) return
@@ -65,7 +95,7 @@ export function ChatBox({
   return (
     <div className="mt-5 border-t border-gray-100 pt-4">
       {history.length > 0 && (
-        <div className="flex flex-col gap-2 mb-3 max-h-48 overflow-y-auto">
+        <div ref={historyRef} className="flex flex-col gap-2 mb-3 max-h-48 overflow-y-auto">
           {history.map((msg, i) => (
             <div
               key={i}

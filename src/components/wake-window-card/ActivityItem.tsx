@@ -9,6 +9,7 @@ interface Props {
   date: string
   windowIndex: number
   log?: ActivityLog
+  logsLoading?: boolean
   onChange: (next: ActivityLog) => void
 }
 
@@ -73,11 +74,16 @@ export function ActivityItem({
   date,
   windowIndex,
   log,
+  logsLoading = false,
   onChange,
 }: Props) {
   const [did, setDid] = useState(log?.did ?? false)
   const [rating, setRating] = useState<Rating>((log?.rating ?? 0) as Rating)
+  // 사용자가 명시적으로 평점을 선택했는지 — rating=0이 "미평가"와 "중립" 구분
+  const [ratingTouched, setRatingTouched] = useState(() => !!(log && log.rating !== 0))
   const [note, setNote] = useState(log?.note ?? '')
+  // 메모가 이미 있으면 바로 표시, 없으면 숨김
+  const [showNote, setShowNote] = useState(() => !!(log?.note?.trim()))
   const [saving, setSaving] = useState(false)
   const [durationEditing, setDurationEditing] = useState(false)
   // 실제 활동 시간 (로그에 저장된 값 우선, 없으면 추천 시간)
@@ -94,7 +100,9 @@ export function ActivityItem({
     if (!hasInitialized.current && log) {
       setDid(log.did ?? false)
       setRating((log.rating ?? 0) as Rating)
+      setRatingTouched(log.rating !== 0)
       setNote(log.note ?? '')
+      if (log.note?.trim()) setShowNote(true)
       setActualDuration(log.activity_duration ?? activity.duration)
       hasInitialized.current = true
       return
@@ -103,9 +111,11 @@ export function ActivityItem({
     if (hasInitialized.current && log) {
       setDid(log.did ?? false)
       setRating((log.rating ?? 0) as Rating)
+      setRatingTouched(log.rating !== 0)
       setActualDuration(log.activity_duration ?? activity.duration)
       if (!isNoteLocallyDirty.current && !isSaving.current) {
         setNote(log.note ?? '')
+        if (log.note?.trim()) setShowNote(true)
       }
     }
   }, [log, activity.duration])
@@ -156,6 +166,7 @@ export function ActivityItem({
   function setRatingValue(next: Rating) {
     const value: Rating = rating === next ? 0 : next
     setRating(value)
+    setRatingTouched(true)
     if (!did) setDid(true)
     save({ did: true, rating: value, note: note.trim() ? note : null })
   }
@@ -226,7 +237,9 @@ export function ActivityItem({
         className={`mt-0.5 w-6 h-6 shrink-0 rounded-full border-2 flex items-center justify-center transition ${
           did
             ? 'bg-amber-500 border-amber-500 text-white'
-            : 'border-gray-300 text-transparent'
+            : logsLoading && !log
+              ? 'border-gray-200 text-transparent opacity-40 animate-pulse'
+              : 'border-gray-300 text-transparent'
         }`}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -321,7 +334,7 @@ export function ActivityItem({
                 rating === 0 ? 'bg-gray-100' : 'hover:bg-gray-50'
               }`}
             >
-              <NeutralFace filled={rating === 0} />
+              <NeutralFace filled={rating === 0 && ratingTouched} />
             </button>
             <button
               type="button"
@@ -336,13 +349,24 @@ export function ActivityItem({
           </div>
         )}
 
-        <textarea
-          value={note}
-          onChange={onNoteChange}
-          placeholder="메모 — 어땠어요?"
-          rows={1}
-          className="mt-2 w-full text-sm bg-gray-50 border border-transparent rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-300 focus:bg-white resize-none placeholder:text-gray-300"
-        />
+        {showNote ? (
+          <textarea
+            value={note}
+            onChange={onNoteChange}
+            placeholder="메모 — 어땠어요?"
+            rows={1}
+            autoFocus={!note}
+            className="mt-2 w-full text-sm bg-gray-50 border border-transparent rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-300 focus:bg-white resize-none placeholder:text-gray-300"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowNote(true)}
+            className="mt-2 text-xs text-gray-300 hover:text-gray-400 transition-colors"
+          >
+            + 메모
+          </button>
+        )}
         {saving && (
           <span className="sr-only" aria-live="polite">저장 중</span>
         )}

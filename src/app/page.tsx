@@ -106,7 +106,7 @@ export default function TodayPage() {
     loadSleepLogs()
   }, [profile?.id, today])
 
-  if (isLoggedIn === null || profileLoading || windowsLoading) {
+  if (isLoggedIn === null || profileLoading) {
     return (
       <main className="min-h-screen p-6">
         <div className="h-8 bg-amber-200 rounded animate-pulse mb-8 w-32" />
@@ -152,6 +152,13 @@ export default function TodayPage() {
       />
 
       <div className="flex flex-col gap-3">
+        {windowsLoading && wakeWindows.length === 0 && (
+          <>
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-48 bg-white rounded-2xl animate-pulse" />
+            ))}
+          </>
+        )}
         {wakeWindows.map((ww, index) => (
           <div key={ww.id} className="flex flex-col gap-3">
             <SleepCard
