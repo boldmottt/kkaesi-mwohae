@@ -26,7 +26,7 @@ const CATEGORY_LABELS: Record<ActivityCategory, string> = {
   emotional: '정서',
 }
 
-const MIN_DAYS = 7
+const MIN_DAYS = 1
 
 const gamjaStyle = { fontFamily: 'var(--font-gamja), cursive' }
 
