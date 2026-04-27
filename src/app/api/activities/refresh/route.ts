@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { generateActivities } from '@/lib/claude/activities'
 import { requireAuth } from '@/lib/auth-middleware'
 
