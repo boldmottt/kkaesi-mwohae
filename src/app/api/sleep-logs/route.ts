@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/auth-middleware'
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.ok) return auth.response
+
   try {
-    const supabase = await createClient()
     const { searchParams } = new URL(req.url)
     const profileId = searchParams.get('profileId')
     const date = searchParams.get('date')
@@ -12,6 +14,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'profileId and date required' }, { status: 400 })
     }
 
+    const { supabase } = auth
     const { data, error } = await supabase
       .from('sleep_logs')
       .select('*')
@@ -29,14 +32,17 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.ok) return auth.response
+
   try {
-    const supabase = await createClient()
     const { profileId, date, napIndex, sleepStart, sleepEnd } = await req.json()
 
     if (!profileId || !date || napIndex === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    const { supabase } = auth
     const { data, error } = await supabase
       .from('sleep_logs')
       .upsert(

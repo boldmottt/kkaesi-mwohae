@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseBabyTimeCsv } from '@/lib/babytime/parser'
+import { requireAuth } from '@/lib/auth-middleware'
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.ok) return auth.response
+
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null

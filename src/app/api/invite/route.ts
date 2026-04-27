@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/auth-middleware'
 import { randomUUID } from 'crypto'
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.ok) return auth.response
+
   try {
     const { profileId } = await req.json()
 
@@ -10,7 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing profileId' }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const { supabase } = auth
     const token = randomUUID()
 
     const { error } = await supabase

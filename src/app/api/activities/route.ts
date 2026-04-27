@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateActivities } from '@/lib/claude/activities'
+import { requireAuth } from '@/lib/auth-middleware'
 
 function normalizeRoutines(val: unknown): string | null {
   if (typeof val === 'string' && val.trim().length > 0) return val.trim()
@@ -8,6 +9,9 @@ function normalizeRoutines(val: unknown): string | null {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.ok) return auth.response
+
   try {
     const {
       profileId,
@@ -33,7 +37,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const { supabase } = auth
     const routinesNorm = normalizeRoutines(routines)
 
     // 루틴 스킵 상태 확인

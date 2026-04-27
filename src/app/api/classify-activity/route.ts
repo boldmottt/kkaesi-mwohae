@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { requireAuth } from '@/lib/auth-middleware'
 
 let _client: OpenAI | null = null
 function getClient(): OpenAI {
@@ -8,6 +9,9 @@ function getClient(): OpenAI {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.ok) return auth.response
+
   try {
     const { activityName } = await req.json()
 
