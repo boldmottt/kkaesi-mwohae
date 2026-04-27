@@ -100,7 +100,7 @@ export function ChatBox({
             <div
               key={i}
               className={`text-sm px-3 py-2 rounded-xl max-w-[85%] ${
-                msg.role === 'user' ? 'bg-amber-100 self-end' : 'bg-gray-100 self-start'
+                msg.role === 'user' ? 'bg-brand-100 self-end' : 'bg-gray-100 self-start'
               }`}
             >
               {msg.content}
@@ -125,7 +125,7 @@ export function ChatBox({
         <button
           onClick={handleSend}
           disabled={loading || !input.trim()}
-          className="bg-amber-400 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
+          className="bg-brand-400 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
         >
           전송
         </button>

@@ -54,7 +54,7 @@ export function BabyTimeImport({ onSuggestion }: Props) {
         {loading ? '분석 중...' : '파일 선택 (CSV / TXT)'}
       </button>
       {result && (
-        <p className="text-sm text-amber-600 mt-2">{result}</p>
+        <p className="text-sm text-brand-600 mt-2">{result}</p>
       )}
     </div>
   )

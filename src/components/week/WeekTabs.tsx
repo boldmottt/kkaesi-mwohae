@@ -36,7 +36,7 @@ export function WeekTabs({ selectedDate, onSelect }: Props) {
           onClick={() => onSelect(date)}
           className={`shrink-0 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
             selectedDate === date
-              ? 'bg-amber-400 text-white'
+              ? 'bg-brand-400 text-white'
               : 'bg-white text-gray-600'
           }`}
         >

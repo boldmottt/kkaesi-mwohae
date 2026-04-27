@@ -109,7 +109,7 @@ export default function TodayPage() {
   if (isLoggedIn === null || profileLoading) {
     return (
       <main className="min-h-screen p-6">
-        <div className="h-8 bg-amber-200 rounded animate-pulse mb-8 w-32" />
+        <div className="h-8 bg-brand-200 rounded animate-pulse mb-8 w-32" />
         <div className="flex flex-col gap-4">
           {[1, 2, 3].map(i => (
             <div key={i} className="h-48 bg-white rounded-2xl animate-pulse" />

@@ -135,7 +135,7 @@ export function AddCustomActivity({ profileId, date, windowIndex, onSaved }: Pro
       <button
         type="button"
         onClick={handleOpen}
-        className="mt-3 w-full py-2.5 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-amber-300 hover:text-amber-500 transition-colors"
+        className="mt-3 w-full py-2.5 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-brand-300 hover:text-brand-500 transition-colors"
       >
         + 다른 활동
       </button>
@@ -163,7 +163,7 @@ export function AddCustomActivity({ profileId, date, windowIndex, onSaved }: Pro
                 key={tag.id}
                 type="button"
                 onClick={() => handleSelectTag(tag)}
-                className="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-full text-sm hover:bg-amber-100 transition-colors"
+                className="px-3 py-1.5 bg-brand-50 text-brand-700 rounded-full text-sm hover:bg-brand-100 transition-colors"
               >
                 {tag.label}
               </button>
@@ -180,13 +180,13 @@ export function AddCustomActivity({ profileId, date, windowIndex, onSaved }: Pro
               onKeyDown={e => e.key === 'Enter' && handleCreateNewTag()}
               placeholder="활동 이름 입력"
               autoFocus
-              className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-amber-300"
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-brand-300"
             />
             <button
               type="button"
               onClick={handleCreateNewTag}
               disabled={!newTagInput.trim()}
-              className="px-3 py-1.5 bg-amber-400 text-white rounded-lg text-sm font-semibold disabled:opacity-40"
+              className="px-3 py-1.5 bg-brand-400 text-white rounded-lg text-sm font-semibold disabled:opacity-40"
             >
               확인
             </button>
@@ -195,7 +195,7 @@ export function AddCustomActivity({ profileId, date, windowIndex, onSaved }: Pro
           <button
             type="button"
             onClick={() => setShowNewTagInput(true)}
-            className="w-full py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-400 hover:border-amber-300 hover:text-amber-500 transition-colors"
+            className="w-full py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-400 hover:border-brand-300 hover:text-brand-500 transition-colors"
           >
             + 새 태그 만들기
           </button>
@@ -218,7 +218,7 @@ export function AddCustomActivity({ profileId, date, windowIndex, onSaved }: Pro
       </div>
 
       <div className="text-center mb-4">
-        <span className="text-3xl font-bold text-amber-500">{minutes}</span>
+        <span className="text-3xl font-bold text-brand-500">{minutes}</span>
         <span className="text-lg text-gray-400 ml-1">분</span>
       </div>
 
@@ -258,7 +258,7 @@ export function AddCustomActivity({ profileId, date, windowIndex, onSaved }: Pro
           type="button"
           onClick={handleSave}
           disabled={saving || minutes <= 0}
-          className="flex-1 py-2.5 bg-amber-400 text-white rounded-lg text-sm font-semibold disabled:opacity-40 transition-colors"
+          className="flex-1 py-2.5 bg-brand-400 text-white rounded-lg text-sm font-semibold disabled:opacity-40 transition-colors"
         >
           {saving ? '저장 중...' : '저장'}
         </button>

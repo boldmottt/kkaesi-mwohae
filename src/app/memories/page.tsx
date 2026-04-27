@@ -112,15 +112,15 @@ export default function MemoriesPage() {
   }, [dayCategoryData])
 
   if (!profile) {
-    return (<div className="min-h-screen flex items-center justify-center bg-amber-50"><p className="text-gray-400">{'불러오는 중...'}</p></div>)
+    return (<div className="min-h-screen flex items-center justify-center bg-brand-50"><p className="text-gray-400">{'불러오는 중...'}</p></div>)
   }
   if (selectedDate && !insightMode) {
     return (<DayDetailView date={selectedDate} logs={dayLogs} profileId={profile.id} onClose={() => setSelectedDate(null)} />)
   }
   return (
-    <div className="min-h-screen bg-amber-50 dark:bg-gray-900 px-4 pt-6 pb-20">
+    <div className="min-h-screen bg-brand-50 dark:bg-gray-900 px-4 pt-6 pb-20">
       <div className="max-w-lg mx-auto">
-        <h1 className="text-xl font-bold text-amber-700 dark:text-amber-400 mb-4" style={gamjaStyle}>
+        <h1 className="text-xl font-bold text-brand-700 dark:text-brand-400 mb-4" style={gamjaStyle}>
           {profile.baby_name}{'의 추억'}
         </h1>
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-sm mb-4">
@@ -132,7 +132,7 @@ export default function MemoriesPage() {
         </div>
         {insightMode && insightDates.size > 0 && (
           <div className="text-center mb-4">
-            <button onClick={() => setInsightMode(false)} className="bg-violet-500 text-white text-sm px-6 py-2 rounded-full">
+            <button onClick={() => setInsightMode(false)} className="bg-brand-500 text-white text-sm px-6 py-2 rounded-full">
               {insightDates.size}{'일 선택 완료 \xB7 인사이트 보기'}
             </button>
           </div>

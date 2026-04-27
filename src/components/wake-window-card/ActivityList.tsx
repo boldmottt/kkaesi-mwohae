@@ -58,7 +58,7 @@ export function ActivityList({ activities, loading, profileId, date, windowIndex
     return (
       <div data-testid="activity-skeleton" className="flex flex-col gap-3">
         {[1, 2, 3].map(i => (
-          <div key={i} className="h-16 bg-amber-100 rounded-lg animate-pulse" />
+          <div key={i} className="h-16 bg-brand-100 rounded-lg animate-pulse" />
         ))}
       </div>
     )

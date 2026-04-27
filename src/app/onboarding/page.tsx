@@ -117,7 +117,7 @@ export default function OnboardingPage() {
         <button
           type="submit"
           disabled={saving}
-          className="bg-amber-400 text-white rounded-xl py-3 font-semibold mt-2 disabled:opacity-60"
+          className="bg-brand-400 text-white rounded-xl py-3 font-semibold mt-2 disabled:opacity-60"
         >
           {saving ? '저장 중...' : '시작하기'}
         </button>

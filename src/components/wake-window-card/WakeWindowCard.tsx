@@ -191,15 +191,15 @@ export function WakeWindowCard({
   })()
 
   return (
-    <div className={`bg-white rounded-2xl shadow-sm transition-shadow ${isCurrentWindow ? 'ring-2 ring-amber-400 shadow-md' : ''}`}>
+    <div className={`bg-white rounded-2xl shadow-sm transition-shadow ${isCurrentWindow ? 'ring-2 ring-brand-400 shadow-md' : ''}`}>
       <button
         type="button"
         onClick={() => setCollapsed(c => !c)}
         className="w-full flex items-center justify-between px-5 py-4 text-left"
       >
         <div className="flex items-center gap-1.5">
-          <span className="text-amber-500 font-bold text-sm">깨시{windowIndex + 1}</span>
-          {isCurrentWindow && <span className="text-[10px] bg-amber-400 text-white px-1.5 py-0.5 rounded-full">지금</span>}
+          <span className="text-brand-500 font-bold text-sm">깨시{windowIndex + 1}</span>
+          {isCurrentWindow && <span className="text-xs bg-brand-400 text-white px-1.5 py-0.5 rounded-full">지금</span>}
           <span className="ml-1 text-gray-700 font-semibold">
             {formatDuration(actualDurationMinutes ?? wakeWindow.duration_minutes)}
           </span>
@@ -227,7 +227,7 @@ export function WakeWindowCard({
               className={`text-xs disabled:opacity-40 transition-colors ${
                 refreshConfirm
                   ? 'text-orange-500 font-semibold'
-                  : 'text-gray-400 hover:text-amber-500'
+                  : 'text-gray-400 hover:text-brand-500'
               }`}
               title={refreshConfirm ? '한 번 더 탭하면 추천이 교체돼요' : '다시 추천받기'}
             >
@@ -236,7 +236,7 @@ export function WakeWindowCard({
           </div>
 
           {wakeWindow.routines && (
-            <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-3">
+            <p className="text-xs text-brand-600 bg-brand-50 rounded-lg px-3 py-2 mb-3">
               📌 {wakeWindow.routines}
             </p>
           )}

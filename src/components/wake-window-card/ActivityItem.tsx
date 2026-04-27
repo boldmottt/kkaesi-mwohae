@@ -236,7 +236,7 @@ export function ActivityItem({
         aria-label={did ? '완료 취소' : '완료 체크'}
         className={`mt-0.5 w-6 h-6 shrink-0 rounded-full border-2 flex items-center justify-center transition ${
           did
-            ? 'bg-amber-500 border-amber-500 text-white'
+            ? 'bg-brand-500 border-brand-500 text-white'
             : logsLoading && !log
               ? 'border-gray-200 text-transparent opacity-40 animate-pulse'
               : 'border-gray-300 text-transparent'
@@ -251,7 +251,7 @@ export function ActivityItem({
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-amber-500 font-bold text-sm">{index + 1}.</span>
+              <span className="text-brand-500 font-bold text-sm">{index + 1}.</span>
               <span className={`font-semibold ${did ? 'line-through text-gray-400' : ''}`}>
                 {activity.name}
               </span>
@@ -261,9 +261,9 @@ export function ActivityItem({
                 onClick={() => did && setDurationEditing(!durationEditing)}
                 className={`text-xs px-2 py-0.5 rounded-full transition ${
                   durationChanged
-                    ? 'bg-amber-100 text-amber-600 font-semibold'
+                    ? 'bg-brand-100 text-brand-600 font-semibold'
                     : 'bg-gray-100 text-gray-400'
-                } ${did ? 'hover:bg-amber-100 cursor-pointer' : 'cursor-default'}`}
+                } ${did ? 'hover:bg-brand-100 cursor-pointer' : 'cursor-default'}`}
               >
                 {did ? actualDuration : activity.duration}
               </button>
@@ -306,7 +306,7 @@ export function ActivityItem({
             <button
               type="button"
               onClick={() => setDurationEditing(false)}
-              className="px-2.5 py-1 text-xs text-amber-500 font-semibold"
+              className="px-2.5 py-1 text-xs text-brand-500 font-semibold"
             >
               완료
             </button>
@@ -321,7 +321,7 @@ export function ActivityItem({
               onClick={() => setRatingValue(1)}
               aria-label="좋아함"
               className={`w-8 h-8 rounded-full flex items-center justify-center transition ${
-                rating === 1 ? 'bg-amber-50' : 'hover:bg-gray-50'
+                rating === 1 ? 'bg-brand-50' : 'hover:bg-gray-50'
               }`}
             >
               <SmileFace filled={rating === 1} />
@@ -356,7 +356,7 @@ export function ActivityItem({
             placeholder="메모 — 어땠어요?"
             rows={1}
             autoFocus={!note}
-            className="mt-2 w-full text-sm bg-gray-50 border border-transparent rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-300 focus:bg-white resize-none placeholder:text-gray-300"
+            className="mt-2 w-full text-sm bg-gray-50 border border-transparent rounded-lg px-3 py-1.5 focus:outline-none focus:border-brand-300 focus:bg-white resize-none placeholder:text-gray-300"
           />
         ) : (
           <button

@@ -200,7 +200,7 @@ export function MonthCalendar({
             else onChangeMonth(year, month - 1)
           }}
           disabled={isFutureBlocked}
-          className="text-amber-500 hover:text-amber-600 disabled:opacity-30 p-1"
+          className="text-brand-500 hover:text-brand-600 disabled:opacity-30 p-1"
           aria-label="이전 달"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -208,7 +208,7 @@ export function MonthCalendar({
           </svg>
         </button>
 
-        <h2 className="text-lg font-bold text-amber-600">
+        <h2 className="text-lg font-bold text-brand-600">
           {year}년 {month}월
         </h2>
 
@@ -219,7 +219,7 @@ export function MonthCalendar({
             else onChangeMonth(year, month + 1)
           }}
           disabled={isFutureBlocked}
-          className="text-amber-500 hover:text-amber-600 disabled:opacity-30 p-1"
+          className="text-brand-500 hover:text-brand-600 disabled:opacity-30 p-1"
           aria-label="다음 달"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -230,7 +230,7 @@ export function MonthCalendar({
 
       {/* 인사이트 모드 안내 */}
       {insightMode && (
-        <div className="text-center text-xs text-violet-500 mb-2">
+        <div className="text-center text-xs text-brand-500 mb-2">
           인사이트를 볼 날짜를 선택하세요 · {insightDates?.size ?? 0}일 선택됨
         </div>
       )}
@@ -278,9 +278,9 @@ export function MonthCalendar({
               disabled={isFuture && !insightMode}
               className={`h-12 flex flex-col items-center justify-start pt-1 rounded-lg transition-colors relative ${
                 isInsightSelected
-                  ? 'bg-violet-100 dark:bg-violet-900/30 ring-2 ring-violet-400'
+                  ? 'bg-brand-100 dark:bg-brand-900/30 ring-2 ring-brand-400'
                   : isSelected
-                    ? 'bg-amber-50 ring-1 ring-amber-300'
+                    ? 'bg-brand-50 ring-1 ring-brand-300'
                     : isFuture
                       ? 'text-gray-200 cursor-default'
                       : hasActivity
@@ -290,12 +290,12 @@ export function MonthCalendar({
                           : 'hover:bg-gray-50'
               }`}
             >
-              <span className={`text-sm ${isToday ? 'font-bold text-amber-600' : ''}`}>
+              <span className={`text-sm ${isToday ? 'font-bold text-brand-600' : ''}`}>
                 {dayNum}
               </span>
               {/* 오늘 표시: 작은 밑줄 */}
               {isToday && !insightMode && (
-                <div className="w-3 h-0.5 bg-amber-400 rounded-full mt-0.5" />
+                <div className="w-3 h-0.5 bg-brand-400 rounded-full mt-0.5" />
               )}
               {/* 인사이트 선택 체크 */}
               {isInsightSelected && (

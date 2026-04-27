@@ -159,7 +159,7 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
   return (
     <div
       className={`rounded-xl border-2 border-dashed transition-colors ${
-        hasData ? 'border-indigo-200 bg-indigo-50/50' : 'border-gray-200 bg-gray-50/50'
+        hasData ? 'border-brand-200 bg-sleep/60' : 'border-gray-200 bg-gray-50/50'
       }`}
     >
       <button
@@ -171,7 +171,7 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
           <span>{emoji}</span>
           <span className="text-sm font-medium text-gray-600">{label}</span>
           {hasData && duration && (
-            <span className="text-xs text-indigo-400">{duration}</span>
+            <span className="text-xs text-brand-400">{duration}</span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -192,7 +192,7 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
                   type="time"
                   value={sleepStart ?? ''}
                   onChange={e => handleStartChange(e.target.value)}
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-300"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-400"
                 />
                 {sleepStart && (
                   <button
@@ -218,7 +218,7 @@ export function SleepCard({ profileId, date, napIndex, totalWindows, onSleepChan
                   type="time"
                   value={sleepEnd ?? ''}
                   onChange={e => handleEndChange(e.target.value)}
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-300"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-400"
                 />
                 {sleepEnd && (
                   <button

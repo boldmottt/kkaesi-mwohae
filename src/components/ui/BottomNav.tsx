@@ -14,7 +14,7 @@ export function BottomNav() {
       <Link
         href="/"
         className={`flex-1 py-4 text-center text-sm font-medium ${
-          path === '/' ? 'text-amber-500' : 'text-gray-400'
+          path === '/' ? 'text-brand-500' : 'text-gray-400'
         }`}
       >
         오늘
@@ -22,7 +22,7 @@ export function BottomNav() {
       <Link
         href="/memories"
         className={`flex-1 py-4 text-center text-sm font-medium ${
-          path === '/memories' ? 'text-amber-500' : 'text-gray-400'
+          path === '/memories' ? 'text-brand-500' : 'text-gray-400'
         }`}
       >
         추억
@@ -30,7 +30,7 @@ export function BottomNav() {
       <Link
         href="/settings"
         className={`flex-1 py-4 text-center text-sm font-medium ${
-          path === '/settings' ? 'text-amber-500' : 'text-gray-400'
+          path === '/settings' ? 'text-brand-500' : 'text-gray-400'
         }`}
       >
         설정

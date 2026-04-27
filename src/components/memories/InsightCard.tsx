@@ -15,7 +15,7 @@ interface Props {
 const CATS: ActivityCategory[] = ['physical', 'sensory', 'language', 'cognitive', 'emotional']
 
 const CATEGORY_HEX: Record<ActivityCategory, string> = {
-  physical: '#fb923c', sensory: '#a855f7', language: '#60a5fa', cognitive: '#4ade80', emotional: '#f472b6',
+  physical: '#F59E0B', sensory: '#B45309', language: '#14B8A6', cognitive: '#22C55E', emotional: '#FB7185',
 }
 
 const CATEGORY_LABELS: Record<ActivityCategory, string> = {
@@ -83,7 +83,7 @@ function PentagonRadar({ values, size = 180 }: { values: Record<ActivityCategory
     const maxVal = Math.max(...CATS.map(cat => Math.max(0.05, values[cat] ?? 0)))
     ctx.beginPath()
     for (let i = 0; i < 5; i++) { const cat = CATS[i]; const val = Math.max(0.05, values[cat] ?? 0); const r = (val / maxVal) * maxRadius; const pt = getPoint(i, r); if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y) }
-    ctx.closePath(); ctx.fillStyle = 'rgba(168,85,247,0.12)'; ctx.fill(); ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2; ctx.stroke()
+    ctx.closePath(); ctx.fillStyle = 'rgba(245,158,11,0.12)'; ctx.fill(); ctx.strokeStyle = '#F59E0B'; ctx.lineWidth = 2; ctx.stroke()
     for (let i = 0; i < 5; i++) {
       const cat = CATS[i]; const val = Math.max(0.05, values[cat] ?? 0); const r = (val / maxVal) * maxRadius; const pt = getPoint(i, r)
       ctx.beginPath(); ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2); ctx.fillStyle = CATEGORY_HEX[cat]; ctx.fill()
@@ -121,7 +121,7 @@ function WeeklyTrendBars({ logs }: { logs: ActivityLog[] }) {
               <div className="w-8 rounded-t-md overflow-hidden flex flex-col-reverse" style={{ height: barHeight }}>
                 {week.total === 0 ? <div className="h-full bg-gray-200 dark:bg-gray-600" /> : CATS.map(cat => { const count = week.counts[cat] ?? 0; if (count === 0) return null; const pct = (count / week.total) * 100; return <div key={cat} style={{ backgroundColor: CATEGORY_HEX[cat], height: `${pct}%` }} /> })}
               </div>
-              <span className="text-[10px] text-gray-400">{week.label}</span>
+              <span className="text-xs text-gray-400">{week.label}</span>
             </div>
           )
         })}
@@ -142,16 +142,16 @@ function CrossDomainSuggestions({ weakest, catCounts }: { weakest: ActivityCateg
       <h4 className="text-xs font-semibold text-gray-500 mb-2">{'💡 이런 활동은 어때요?'}</h4>
       <div className="flex flex-col gap-2">
         {picks.map((pick, idx) => (
-          <div key={idx} className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3">
+          <div key={idx} className="bg-brand-50 dark:bg-brand-900/20 rounded-xl p-3">
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CATEGORY_HEX[pick.forCat] }} />
-              <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">{pick.activity}</span>
+              <span className="text-sm font-semibold text-brand-700 dark:text-brand-400">{pick.activity}</span>
               <div className="flex gap-0.5 ml-auto">{pick.crosses.map(c => (<span key={c} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CATEGORY_HEX[c] }} />))}</div>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">{pick.description}</p>
             <div className="flex gap-1 mt-1.5">
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: CATEGORY_HEX[pick.forCat] + '20', color: CATEGORY_HEX[pick.forCat] }}>{CATEGORY_LABELS[pick.forCat]}</span>
-              {pick.crosses.map(c => (<span key={c} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: CATEGORY_HEX[c] + '20', color: CATEGORY_HEX[c] }}>{CATEGORY_LABELS[c]}</span>))}
+              <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: CATEGORY_HEX[pick.forCat] + '20', color: CATEGORY_HEX[pick.forCat] }}>{CATEGORY_LABELS[pick.forCat]}</span>
+              {pick.crosses.map(c => (<span key={c} className="text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: CATEGORY_HEX[c] + '20', color: CATEGORY_HEX[c] }}>{CATEGORY_LABELS[c]}</span>))}
             </div>
           </div>
         ))}
@@ -199,17 +199,17 @@ export function InsightCard({ logs, dateCount, isCustomRange, profileId, month, 
   }, [catCounts])
   const avgMinutesPerDay = dateCount > 0 ? Math.round(totalMinutes / dateCount) : 0
   const notEnoughData = dateCount < MIN_DAYS
-  const scoreColorClass = balanceInfo.score >= 80 ? 'text-green-500' : balanceInfo.score >= 60 ? 'text-amber-500' : balanceInfo.score >= 40 ? 'text-orange-500' : 'text-red-400'
+  const scoreColorClass = balanceInfo.score >= 80 ? 'text-success' : balanceInfo.score >= 60 ? 'text-brand-500' : balanceInfo.score >= 40 ? 'text-orange-500' : 'text-error'
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-bold text-amber-600 dark:text-amber-400" style={gamjaStyle}>
+        <h3 className="text-base font-bold text-brand-600 dark:text-brand-400" style={gamjaStyle}>
           {isCustomRange ? `${dateCount}일간의 인사이트` : '이번 달 인사이트'}
         </h3>
         <div className="flex gap-2">
           {isCustomRange && (<button onClick={onResetToMonthly} className="text-xs text-gray-400 hover:text-gray-600">{'월 전체로'}</button>)}
-          <button onClick={onStartSelectDates} className="text-xs text-violet-500 hover:text-violet-600">{'날짜 선택'}</button>
+          <button onClick={onStartSelectDates} className="text-xs text-brand-600 hover:text-brand-700">{'날짜 선택'}</button>
         </div>
       </div>
       {notEnoughData ? (
@@ -231,9 +231,9 @@ export function InsightCard({ logs, dateCount, isCustomRange, profileId, month, 
             <p className="text-xs text-center text-gray-500">{balanceInfo.comment}</p>
           </div>
           {!isCustomRange && (
-            <div className="bg-violet-50 dark:bg-violet-900/20 rounded-xl p-3">
-              {aiLoading ? (<div className="text-center py-2"><span className="text-xs text-violet-400 animate-pulse">{'전문가 코멘트를 만들고 있어요...'}</span></div>
-              ) : aiComment ? (<div><p className="text-xs font-semibold text-violet-600 dark:text-violet-400 mb-1">{'💬 이번 달 발달 코멘트'}</p><p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{aiComment}</p></div>
+            <div className="bg-brand-50 dark:bg-brand-900/20 rounded-xl p-3">
+              {aiLoading ? (<div className="text-center py-2"><span className="text-xs text-brand-400 animate-pulse">{'전문가 코멘트를 만들고 있어요...'}</span></div>
+              ) : aiComment ? (<div><p className="text-xs font-semibold text-brand-600 dark:text-brand-400 mb-1">{'💬 이번 달 발달 코멘트'}</p><p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{aiComment}</p></div>
               ) : (<p className="text-xs text-gray-400">{'데이터가 더 쌓이면 전문가 코멘트가 나타나요'}</p>)}
             </div>
           )}
@@ -243,7 +243,7 @@ export function InsightCard({ logs, dateCount, isCustomRange, profileId, month, 
             <div>
               <h4 className="text-xs font-semibold text-gray-500 mb-1.5">{'😊 좋아한 활동'}</h4>
               {liked.length === 0 ? (<p className="text-xs text-gray-300">{'아직 없어요'}</p>) : (
-                <div className="flex flex-col gap-1">{liked.map((item, i) => { const log = meaningful.find(l => l.activity_name === item.name); const cat = (log?.category as ActivityCategory) ?? 'other'; return (<div key={i} className="flex items-center gap-1.5 text-xs"><span className="text-violet-400 font-bold">{i + 1}</span>{cat !== 'other' && <span style={{ backgroundColor: CATEGORY_HEX[cat] }} className="w-1.5 h-3 rounded-full shrink-0" />}<span className="text-gray-600 dark:text-gray-300">{item.name}</span><span className="text-gray-400">{'×'}{item.count}</span></div>) })}</div>
+                <div className="flex flex-col gap-1">{liked.map((item, i) => { const log = meaningful.find(l => l.activity_name === item.name); const cat = (log?.category as ActivityCategory) ?? 'other'; return (<div key={i} className="flex items-center gap-1.5 text-xs"><span className="text-brand-400 font-bold">{i + 1}</span>{cat !== 'other' && <span style={{ backgroundColor: CATEGORY_HEX[cat] }} className="w-1.5 h-3 rounded-full shrink-0" />}<span className="text-gray-600 dark:text-gray-300">{item.name}</span><span className="text-gray-400">{'×'}{item.count}</span></div>) })}</div>
               )}
             </div>
             <div>
@@ -254,9 +254,9 @@ export function InsightCard({ logs, dateCount, isCustomRange, profileId, month, 
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div><div className="text-lg font-bold text-amber-600 dark:text-amber-400">{totalActivities}</div><div className="text-[10px] text-gray-400">{'총 활동'}</div></div>
-            <div><div className="text-lg font-bold text-amber-600 dark:text-amber-400">{dateCount}{'일'}</div><div className="text-[10px] text-gray-400">{'활동한 날'}</div></div>
-            <div><div className="text-lg font-bold text-amber-600 dark:text-amber-400">{avgMinutesPerDay}{'분'}</div><div className="text-[10px] text-gray-400">{'일 평균'}</div></div>
+            <div><div className="text-lg font-bold text-brand-600 dark:text-brand-400">{totalActivities}</div><div className="text-xs text-gray-400">{'총 활동'}</div></div>
+            <div><div className="text-lg font-bold text-brand-600 dark:text-brand-400">{dateCount}{'일'}</div><div className="text-xs text-gray-400">{'활동한 날'}</div></div>
+            <div><div className="text-lg font-bold text-brand-600 dark:text-brand-400">{avgMinutesPerDay}{'분'}</div><div className="text-xs text-gray-400">{'일 평균'}</div></div>
           </div>
         </div>
       )}

@@ -159,7 +159,7 @@ export function RoutineSettings({ profileId }: Props) {
                 aria-label={r.enabled ? '끄기' : '켜기'}
                 className={`mt-0.5 w-5 h-5 shrink-0 rounded-full border-2 transition ${
                   r.enabled
-                    ? 'bg-amber-500 border-amber-500'
+                    ? 'bg-brand-500 border-brand-500'
                     : 'border-gray-300'
                 }`}
               />
@@ -174,7 +174,7 @@ export function RoutineSettings({ profileId }: Props) {
                 <button
                   type="button"
                   onClick={() => startEdit(r)}
-                  className="text-xs text-gray-400 hover:text-amber-500 px-2 py-1"
+                  className="text-xs text-gray-400 hover:text-brand-500 px-2 py-1"
                 >
                   수정
                 </button>
@@ -192,7 +192,7 @@ export function RoutineSettings({ profileId }: Props) {
       )}
 
       {draft ? (
-        <div className="bg-white rounded-xl p-4 border border-amber-200">
+        <div className="bg-white rounded-xl p-4 border border-brand-200">
           <div className="flex flex-col gap-3">
             <label className="flex flex-col gap-1">
               <span className="text-xs text-gray-500">이름</span>
@@ -201,7 +201,7 @@ export function RoutineSettings({ profileId }: Props) {
                 value={draft.label}
                 onChange={e => setDraft({ ...draft, label: e.target.value })}
                 placeholder="예: 수면 루틴, 산책"
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-400"
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-400"
               />
             </label>
 
@@ -230,7 +230,7 @@ export function RoutineSettings({ profileId }: Props) {
                   onClick={() => setDraft({ ...draft, kind: 'window_position' })}
                   className={`flex-1 py-2 rounded-lg text-sm ${
                     draft.kind === 'window_position'
-                      ? 'bg-amber-100 text-amber-600 font-semibold'
+                      ? 'bg-brand-100 text-brand-600 font-semibold'
                       : 'bg-gray-100 text-gray-500'
                   }`}
                 >
@@ -241,7 +241,7 @@ export function RoutineSettings({ profileId }: Props) {
                   onClick={() => setDraft({ ...draft, kind: 'time_of_day' })}
                   className={`flex-1 py-2 rounded-lg text-sm ${
                     draft.kind === 'time_of_day'
-                      ? 'bg-amber-100 text-amber-600 font-semibold'
+                      ? 'bg-brand-100 text-brand-600 font-semibold'
                       : 'bg-gray-100 text-gray-500'
                   }`}
                 >
@@ -304,7 +304,7 @@ export function RoutineSettings({ profileId }: Props) {
                 onChange={e => setDraft({ ...draft, description: e.target.value })}
                 placeholder="차분한 조명, 자장가, 마사지 등"
                 rows={2}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-amber-400"
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-brand-400"
               />
             </label>
 
@@ -320,7 +320,7 @@ export function RoutineSettings({ profileId }: Props) {
                 type="button"
                 onClick={save}
                 disabled={saving || !draft.label.trim()}
-                className="flex-1 bg-amber-400 text-white rounded-xl py-2 text-sm font-semibold disabled:opacity-60"
+                className="flex-1 bg-brand-400 text-white rounded-xl py-2 text-sm font-semibold disabled:opacity-60"
               >
                 {saving ? '저장 중...' : '저장'}
               </button>
@@ -331,7 +331,7 @@ export function RoutineSettings({ profileId }: Props) {
         <button
           type="button"
           onClick={() => setDraft(EMPTY_DRAFT)}
-          className="w-full border border-dashed border-amber-300 text-amber-500 rounded-xl py-3 text-sm font-semibold"
+          className="w-full border border-dashed border-brand-300 text-brand-500 rounded-xl py-3 text-sm font-semibold"
         >
           + 루틴 추가
         </button>

@@ -225,7 +225,7 @@ export function DayDetailView({ date, logs, profileId, onClose }: Props) {
   const backButton = (
     <button
       onClick={onClose}
-      className="text-sm text-amber-500 hover:text-amber-600 flex items-center gap-1"
+      className="text-sm text-brand-500 hover:text-brand-600 flex items-center gap-1"
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="15 18 9 12 15 6" />
@@ -235,16 +235,16 @@ export function DayDetailView({ date, logs, profileId, onClose }: Props) {
   )
 
   return (
-    <div className="min-h-screen bg-[#FFF8F0] dark:bg-gray-900 dark:text-white">
+    <div className="min-h-screen bg-brand-50 dark:bg-gray-900 dark:text-white">
       {/* 상단 바 */}
-      <div className="sticky top-0 bg-[#FFF8F0] dark:bg-gray-900 z-10 px-6 pt-4 pb-2 border-b border-amber-100 dark:border-gray-700">
+      <div className="sticky top-0 bg-brand-50 dark:bg-gray-900 z-10 px-6 pt-4 pb-2 border-b border-brand-100 dark:border-gray-700">
         {backButton}
       </div>
 
       <div className="px-6 pb-8">
         {/* 날짜 헤더 */}
         <div className="py-4">
-          <h2 className="text-xl font-bold text-amber-700 dark:text-amber-400">
+          <h2 className="text-xl font-bold text-brand-700 dark:text-brand-400">
             {formatDateHeader(date)}
           </h2>
         </div>
@@ -256,7 +256,7 @@ export function DayDetailView({ date, logs, profileId, onClose }: Props) {
               <span className="animate-pulse">💭</span> 요약을 만들고 있어요...
             </div>
           ) : summary ? (
-            <p className="text-sm text-amber-700 dark:text-amber-400 font-medium" style={gamjaStyle}>
+            <p className="text-sm text-brand-700 dark:text-brand-400 font-medium" style={gamjaStyle}>
               {summary}
             </p>
           ) : (
@@ -280,10 +280,10 @@ export function DayDetailView({ date, logs, profileId, onClose }: Props) {
                 return (
                   <div key={windowIndex} className="relative mb-4 last:mb-0">
                     {/* 타임라인 도트 */}
-                    <div className="absolute -left-[30px] top-2 w-3 h-3 bg-amber-400 dark:bg-amber-500 rounded-full" />
+                    <div className="absolute -left-[30px] top-2 w-3 h-3 bg-brand-400 dark:bg-brand-500 rounded-full" />
 
                     {/* 시간대 라벨 */}
-                    <div className="text-xs text-amber-500 dark:text-amber-400 font-semibold mb-2">
+                    <div className="text-xs text-brand-500 dark:text-brand-400 font-semibold mb-2">
                       {windowIndex + 1}번째 깨시 시간
                     </div>
 
@@ -319,7 +319,7 @@ export function DayDetailView({ date, logs, profileId, onClose }: Props) {
 
                                   {/* 메모 박스 */}
                                   {log.note && log.note.trim() && (
-                                    <div className="mt-1.5 text-xs bg-[#FFF0E8] dark:bg-gray-700 rounded-lg px-3 py-1.5 text-gray-600 dark:text-gray-200 whitespace-pre-wrap">
+                                    <div className="mt-1.5 text-xs bg-brand-100 dark:bg-gray-700 rounded-lg px-3 py-1.5 text-gray-600 dark:text-gray-200 whitespace-pre-wrap">
                                       {log.note}
                                     </div>
                                   )}
@@ -347,7 +347,7 @@ export function DayDetailView({ date, logs, profileId, onClose }: Props) {
         {/* 일일 통계 */}
         {totalActivities > 0 && (
           <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-            <h3 className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-3">오늘 하루</h3>
+            <h3 className="text-sm font-semibold text-brand-600 dark:text-brand-400 mb-3">오늘 하루</h3>
 
             {/* 점묘화 원형 */}
             <div className="flex justify-center mb-3">

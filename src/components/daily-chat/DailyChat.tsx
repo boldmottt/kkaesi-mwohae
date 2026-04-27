@@ -197,8 +197,8 @@ export function DailyChat({
       {isOpen && (
         <div className="px-5 pb-5">
           {windowsWithRoutines.length > 0 && (
-            <div className="mb-4 p-3 bg-amber-50 rounded-xl">
-              <p className="text-xs font-semibold text-amber-700 mb-2">📌 오늘의 루틴</p>
+            <div className="mb-4 p-3 bg-brand-50 rounded-xl">
+              <p className="text-xs font-semibold text-brand-700 mb-2">📌 오늘의 루틴</p>
               {windowsWithRoutines.map(w => {
                 const status = routineStatuses.find(r => r.windowIndex === w.index)
                 const isSkipped = status?.skipped ?? false
@@ -209,7 +209,7 @@ export function DailyChat({
                     </span>
                     <button
                       onClick={() => handleRoutineToggle(w.index, w.routines!, !isSkipped)}
-                      className={`text-xs px-2 py-1 rounded-lg ${isSkipped ? 'bg-gray-200 text-gray-500' : 'bg-amber-200 text-amber-700'}`}
+                      className={`text-xs px-2 py-1 rounded-lg ${isSkipped ? 'bg-gray-200 text-gray-500' : 'bg-brand-200 text-brand-700'}`}
                     >
                       {isSkipped ? '스킵됨' : '유지'}
                     </button>
@@ -224,7 +224,7 @@ export function DailyChat({
               <div
                 key={i}
                 className={`text-sm px-3 py-2 rounded-xl max-w-[85%] ${
-                  msg.role === 'user' ? 'bg-amber-100 self-end' : 'bg-gray-100 self-start'
+                  msg.role === 'user' ? 'bg-brand-100 self-end' : 'bg-gray-100 self-start'
                 }`}
               >
                 {msg.content}
@@ -249,7 +249,7 @@ export function DailyChat({
             <button
               onClick={handleSend}
               disabled={loading || !input.trim()}
-              className="bg-amber-400 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
+              className="bg-brand-400 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
             >
               전송
             </button>

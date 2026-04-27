@@ -50,7 +50,7 @@ export function WakeWindowSettings({ value, onChange }: Props) {
         <button
           type="button"
           onClick={addWindow}
-          className="w-8 h-8 rounded-full bg-amber-400 text-white text-lg font-bold"
+          className="w-8 h-8 rounded-full bg-brand-400 text-white text-lg font-bold"
         >
           +
         </button>
@@ -58,7 +58,7 @@ export function WakeWindowSettings({ value, onChange }: Props) {
 
       {value.map((window, index) => (
         <div key={index} className="bg-white rounded-xl p-4 flex flex-col gap-3">
-          <span className="font-semibold text-amber-600">깨시{index + 1}</span>
+          <span className="font-semibold text-brand-600">깨시{index + 1}</span>
 
           <div>
             <label className="text-sm text-gray-500 mb-1 block">깨어있는 시간</label>

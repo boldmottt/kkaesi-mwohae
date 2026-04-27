@@ -118,17 +118,17 @@ export default function SettingsPage() {
 
   if (wakeLoading || !profile) {
     return (
-      <div className="min-h-screen bg-amber-50 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-brand-50 p-6 flex items-center justify-center">
         <p className="text-gray-500">불러오는 중...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-amber-50 p-6">
+    <div className="min-h-screen bg-brand-50 p-6">
       <div className="max-w-lg mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-amber-900">설정</h1>
+          <h1 className="text-2xl font-bold text-brand-900">설정</h1>
           <button onClick={() => router.push('/')} className="text-gray-400 text-sm">
             닫기
           </button>
@@ -141,14 +141,14 @@ export default function SettingsPage() {
         )}
 
         <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h2 className="font-semibold text-amber-800 mb-3">깨시 설정</h2>
+          <h2 className="font-semibold text-brand-800 mb-3">깨시 설정</h2>
 
           <WakeWindowSettings value={windows} onChange={setWindows} />
 
           <button
             onClick={handleSaveWindows}
             disabled={saving || windows.length === 0}
-            className="w-full bg-amber-500 text-white py-2 rounded-lg mt-4"
+            className="w-full bg-brand-500 text-white py-2 rounded-lg mt-4"
           >
             {saving ? '저장 중...' : saveSuccess ? '저장됨 ✓' : '저장'}
           </button>
@@ -157,14 +157,14 @@ export default function SettingsPage() {
         <BabyTimeImport />
 
         <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h2 className="font-semibold text-amber-800 mb-3">배우자 공유</h2>
+          <h2 className="font-semibold text-brand-800 mb-3">배우자 공유</h2>
           <p className="text-sm text-gray-600 mb-3">
             초대 링크를 공유하면 배우자도 같은 깨시 스케줄을 볼 수 있어요.
           </p>
 
           <button
             onClick={handleCreateInvite}
-            className="w-full bg-amber-500 text-white py-2 rounded-lg"
+            className="w-full bg-brand-500 text-white py-2 rounded-lg"
           >
             초대 링크 생성 + 복사
           </button>
@@ -176,14 +176,14 @@ export default function SettingsPage() {
 
         {/* 관리 도구 */}
         <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h2 className="font-semibold text-amber-800 mb-3">관리 도구</h2>
+          <h2 className="font-semibold text-brand-800 mb-3">관리 도구</h2>
 
           {/* 카테고리 재분류 */}
           <div className="mb-4">
             <button
               onClick={handleMigrate}
               disabled={migrating}
-              className="w-full bg-purple-500 text-white py-2 rounded-lg"
+              className="w-full bg-brand-500 text-white py-2 rounded-lg"
             >
               {migrating ? '분류 중... (잠시 기다려주세요)' : '활동 카테고리 재분류'}
             </button>

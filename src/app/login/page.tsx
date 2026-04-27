@@ -60,13 +60,13 @@ export default function LoginPage() {
       <div className="flex w-full max-w-sm mb-4 rounded-xl overflow-hidden border border-gray-200">
         <button
           onClick={() => setMode('magic')}
-          className={`flex-1 py-2 text-sm font-medium transition-colors ${mode === 'magic' ? 'bg-amber-400 text-white' : 'bg-white text-gray-500'}`}
+          className={`flex-1 py-2 text-sm font-medium transition-colors ${mode === 'magic' ? 'bg-brand-400 text-white' : 'bg-white text-gray-500'}`}
         >
           이메일 링크
         </button>
         <button
           onClick={() => setMode('password')}
-          className={`flex-1 py-2 text-sm font-medium transition-colors ${mode === 'password' ? 'bg-amber-400 text-white' : 'bg-white text-gray-500'}`}
+          className={`flex-1 py-2 text-sm font-medium transition-colors ${mode === 'password' ? 'bg-brand-400 text-white' : 'bg-white text-gray-500'}`}
         >
           비밀번호
         </button>
@@ -85,7 +85,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-amber-400 text-white rounded-xl px-4 py-3 text-base font-semibold disabled:opacity-60"
+            className="bg-brand-400 text-white rounded-xl px-4 py-3 text-base font-semibold disabled:opacity-60"
           >
             {loading ? '전송 중...' : '로그인 링크 받기'}
           </button>
@@ -112,7 +112,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-amber-400 text-white rounded-xl px-4 py-3 text-base font-semibold disabled:opacity-60"
+            className="bg-brand-400 text-white rounded-xl px-4 py-3 text-base font-semibold disabled:opacity-60"
           >
             {loading ? '로그인 중...' : '로그인'}
           </button>
