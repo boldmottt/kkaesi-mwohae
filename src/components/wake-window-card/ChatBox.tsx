@@ -44,6 +44,19 @@ export function ChatBox({
     } catch {}
   }, [history, storageKey])
 
+  // 오늘 이전 날짜 채팅 기록 정리
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const todayPrefix = `chat_${profileId}_${date}_`
+    const generalPrefix = `chat_${profileId}_`
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (key?.startsWith(generalPrefix) && !key.startsWith(todayPrefix)) {
+        localStorage.removeItem(key)
+      }
+    }
+  }, [profileId, date])
+
   // 히스토리 변경 시 스크롤 하단 고정
   useEffect(() => {
     if (historyRef.current) {

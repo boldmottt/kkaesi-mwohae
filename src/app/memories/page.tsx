@@ -102,7 +102,7 @@ export default function MemoriesPage() {
     setInsightMode(false); setInsightDates(new Set()); setInsightLogs([])
   }, [])
 
-  const isCustomRange = insightMode && insightDates.size > 0
+  const isCustomRange = !insightMode && insightDates.size > 0
   const insightDisplayLogs = isCustomRange ? insightLogs : monthlyLogs
   const insightDateCount = isCustomRange ? insightDates.size : Object.keys(dayCategoryData).length
   const monthTotal = useMemo(() => {

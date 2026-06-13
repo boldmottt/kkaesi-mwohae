@@ -157,17 +157,22 @@ export function WakeWindowCard({
     setLogsRefreshKey(prev => prev + 1)
   }
 
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000)
+    return () => clearInterval(timer)
+  }, [])
+
   const isCurrentWindow = useMemo(() => {
     if (!wakeWindow.start_time) return false
     try {
-      const now = new Date()
       const nowMinutes = now.getHours() * 60 + now.getMinutes()
       const { hours, minutes } = parseTimeString(wakeWindow.start_time)
       const startMinutes = hours * 60 + minutes
       const endMinutes = startMinutes + wakeWindow.duration_minutes
       return nowMinutes >= startMinutes && nowMinutes < endMinutes
     } catch { return false }
-  }, [wakeWindow.start_time, wakeWindow.duration_minutes])
+  }, [wakeWindow.start_time, wakeWindow.duration_minutes, now])
 
   const actualDurationMinutes = (() => {
     if (!actualEndTime || !wakeWindow.start_time) return null

@@ -96,6 +96,14 @@ export function ActivityItem({
   const isSaving = useRef(false)
   const hasInitialized = useRef(false)
 
+  const latestNote = useRef(note)
+  const latestDid = useRef(did)
+  const latestRating = useRef(rating)
+
+  useEffect(() => { latestNote.current = note }, [note])
+  useEffect(() => { latestDid.current = did }, [did])
+  useEffect(() => { latestRating.current = rating }, [rating])
+
   useEffect(() => {
     if (!hasInitialized.current && log) {
       setDid(log.did ?? false)
@@ -203,7 +211,6 @@ export function ActivityItem({
       if (noteTimer.current) {
         clearTimeout(noteTimer.current)
         if (isNoteLocallyDirty.current) {
-          const currentNote = note
           fetch('/api/activity-logs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -214,9 +221,9 @@ export function ActivityItem({
               activityName: activity.name,
               activityDuration: actualDuration,
               activityEffect: activity.effect,
-              did,
-              rating,
-              note: currentNote.trim() || null,
+              did: latestDid.current,
+              rating: latestRating.current,
+              note: latestNote.current.trim() || null,
               category: (activity as { category?: string }).category ?? 'other',
             }),
           }).catch(() => {})
